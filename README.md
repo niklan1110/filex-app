@@ -2,7 +2,8 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/media/banner-dark.svg">
-  <img alt="FileX: documents go in, pass through FileX, and come out converted, compressed, made searchable or turned into another ebook format" src="docs/media/banner-light.svg" width="900">
+  <source media="(prefers-color-scheme: light)" srcset="docs/media/banner-light.svg">
+  <img alt="FileX. Your paper, your computer. 30 tools, no account, no cloud. A Word file and a crooked scan ride a belt into FileX; a PDF compressed by 62 percent and a PDF made from the Word file come out" src="docs/media/banner-light.svg" width="900">
 </picture>
 
 **Your paper, your computer.** A private toolkit for PDF, Office, ebooks, images and scans:
@@ -37,6 +38,12 @@ with "Delete now".
 
 > [!NOTE]
 > **Pre-release.** There are no published images yet, so the first start builds them from source.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/divider-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/media/divider-light.svg">
+  <img alt="" src="docs/media/divider-light.svg" width="100%">
+</picture>
 
 ## Screenshots
 
@@ -77,6 +84,12 @@ The images follow your GitHub theme.
   </tr>
 </table>
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/header-quick-start-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/media/header-quick-start-light.svg">
+  <img alt="" src="docs/media/header-quick-start-light.svg" width="100%">
+</picture>
+
 ## Quick start
 
 You need Docker: Docker Engine with Compose on x86-64 Linux, or Docker Desktop on Windows or
@@ -95,12 +108,58 @@ reach it.
 
 Step-by-step install, updates, uninstall and every `.env` setting: [docs/install.md](docs/install.md).
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/header-tools-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/media/header-tools-light.svg">
+  <img alt="" src="docs/media/header-tools-light.svg" width="100%">
+</picture>
+
 ## Tools
 
 30 tools, plus **Convert to any format**, which chains them. Each tool belongs to a worker group: `core`
 always runs; `office`, `ocr` and `ebook` are optional compose profiles, so a small machine runs
 only what it needs. Options, inputs, warnings and error codes per tool:
 [docs/tools.md](docs/tools.md).
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/card-organize-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/card-organize-light.svg">
+    <img alt="Organize: 6 tools, among them Merge PDFs, Split PDF, Organize pages and Rotate pages" src="docs/media/card-organize-light.svg" width="49%">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/card-optimize-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/card-optimize-light.svg">
+    <img alt="Optimize: 3 tools, Compress PDF, Repair PDF and PDF to PDF/A" src="docs/media/card-optimize-light.svg" width="49%">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/card-convert-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/card-convert-light.svg">
+    <img alt="Convert: 6 tools, among them Office to PDF, PDF to Word, Images to PDF and PDF to images" src="docs/media/card-convert-light.svg" width="49%">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/card-edit-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/card-edit-light.svg">
+    <img alt="Edit: 3 tools, Add watermark, Page numbers and PDF properties" src="docs/media/card-edit-light.svg" width="49%">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/card-security-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/card-security-light.svg">
+    <img alt="Security: 5 tools, among them Sign PDF, Protect PDF, Remove password and Strip metadata" src="docs/media/card-security-light.svg" width="49%">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/card-ocr-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/card-ocr-light.svg">
+    <img alt="OCR and scans: 2 tools, Searchable PDF and Clean up scans" src="docs/media/card-ocr-light.svg" width="49%">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/card-ebook-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/card-ebook-light.svg">
+    <img alt="Ebooks: 5 tools, among them Convert ebooks, DjVu to PDF, Comic to PDF and PDF to comic" src="docs/media/card-ebook-light.svg" width="49%">
+  </picture>
+</p>
+
+Every tool, by family:
 
 | Category | Tools | Group |
 |---|---|---|
@@ -118,6 +177,14 @@ only what it needs. Options, inputs, warnings and error codes per tool:
 
 Online PDF sites and desktop suites are good at what they do, but they either take your files or
 your money. FileX is for people who would rather keep both.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/compress-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/compress-light.svg">
+    <img alt="Compress PDF result: minus 62 percent, 8.4 MB to 3.2 MB, 5.2 MB saved; the new size bar is 38 percent of the original" src="docs/media/compress-light.svg" width="640">
+  </picture>
+</p>
 
 | | FileX | Online PDF sites | Paid desktop suites |
 |---|---|---|---|
@@ -185,6 +252,12 @@ Plan for at least 20 GB free disk for images, build cache and 24 hours of result
 did not enable stays in the catalog with the hint "Enable the `ocr` profile"; add it to
 `COMPOSE_PROFILES` and run `docker compose up -d` whenever you like.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/header-privacy-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/media/header-privacy-light.svg">
+  <img alt="" src="docs/media/header-privacy-light.svg" width="100%">
+</picture>
+
 ## Privacy and security
 
 Every file you drop in is treated as hostile, so a malicious document cannot reach your network
@@ -207,6 +280,12 @@ or your other files:
 
 Deletion is an ordinary file delete, not shredding (which means little on SSDs and copy-on-write
 filesystems anyway); encrypt your disk if you need more.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/header-api-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/media/header-api-light.svg">
+  <img alt="" src="docs/media/header-api-light.svg" width="100%">
+</picture>
 
 ## REST API
 
@@ -310,6 +389,12 @@ AMD CPU, Docker Desktop works.
 
 More: [docs/install.md](docs/install.md).
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/header-roadmap-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/media/header-roadmap-light.svg">
+  <img alt="" src="docs/media/header-roadmap-light.svg" width="100%">
+</picture>
+
 ## Roadmap
 
 **Release 1** (in progress): the 30 tools above and Convert to any format.
@@ -351,6 +436,12 @@ npm --prefix web test                       # UI tests
 
 Python 3.12, FastAPI, Valkey (Redis-compatible) streams for the job queue, React + Vite for the UI. One multi-stage
 [docker/Dockerfile](docker/Dockerfile) builds the API and each worker image.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/divider-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/media/divider-light.svg">
+  <img alt="" src="docs/media/divider-light.svg" width="100%">
+</picture>
 
 ## License
 
