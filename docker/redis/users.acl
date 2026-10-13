@@ -1,0 +1,11 @@
+# FileX Redis users: ADR-0007 item 3 (review H1 fix 3, L3) and the key table in ADR-0008.
+# A template: docker/redis/start.sh drops the comment lines, puts in the SHA-256 of each
+# password from its Docker secret file and starts Redis with the result (it lives on tmpfs).
+# tests/integration/test_redis_acl.py checks these rules against the key table; change both.
+#
+# default: off. A connection that does not AUTH as api or worker can run no command.
+user default off resetpass resetkeys resetchannels -@all
+# api: every FileX prefix it writes, plus read-only heartbeats (/status). No slot:* (worker-only).
+user api on #@API_HASH@ resetkeys resetchannels ~job:* ~q:* ~own:* ~ownidx:* ~sec:* ~rl:* %R~worker:* -@all +@read +@write +@stream +@connection +@transaction -@admin -@dangerous
+# worker: jobs, streams, heartbeats and heavy slots. Not own:*, ownidx:*, rl:*. On sec:* only GETDEL.
+user worker on #@WORKER_HASH@ resetkeys resetchannels ~q:* ~job:* ~worker:* ~slot:* &* -@all +@read +@write +@stream +@connection +@transaction -@admin -@dangerous (~sec:* +getdel)

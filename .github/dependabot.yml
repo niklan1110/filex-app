@@ -1,0 +1,29 @@
+# Digest bumps for the pinned base images and actions (plan task 66, security review M-1).
+# Python pins live in requirements/*.txt (hashed): refresh them with `sh scripts/lock_deps.sh`;
+# the weekly images.yml run audits them. Dependabot PRs do not start CI (it is manual): run
+# images.yml on the PR branch before merging one.
+version: 2
+updates:
+  # FROM ...@sha256 lines in docker/Dockerfile (python, node).
+  - package-ecosystem: docker
+    directory: /docker
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 3
+    # Digests within the same tag only: a new Python or Node line is a deliberate change (the
+    # lockfiles are resolved for Python 3.12).
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+  # The redis service's Valkey image in compose.yaml. Dependabot does not read workflow service
+  # images: copy a bumped digest into ci.yml's `services.redis.image` by hand.
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 2
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }
+    open-pull-requests-limit: 3

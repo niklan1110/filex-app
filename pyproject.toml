@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=77"]  # SPDX license string (PEP 639)
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "filex"
+version = "0.1.0"
+description = "Self-hosted document toolkit"
+license = "AGPL-3.0-or-later"
+requires-python = ">=3.12"
+dependencies = ["redis>=5", "pydantic>=2.11", "defusedxml>=0.7.1"]  # _xml.py: every group parses XML (OOXML, FB2, OPF)
+
+# The images install only from the hashed lockfiles in requirements/: after changing any
+# dependency here, run `sh scripts/lock_deps.sh` (plan task 66).
+[project.optional-dependencies]
+api = ["fastapi>=0.115", "uvicorn>=0.30", "python-multipart>=0.0.20", "httpx>=0.27"]
+core = [
+    "pikepdf>=9",
+    "pymupdf>=1.24",
+    "pillow>=10.3",
+    "pillow-heif>=0.18",
+    "img2pdf>=0.6",
+    "pypdfium2>=5",
+    "reportlab>=4.0",  # watermark and page-number overlays (plan task 29)
+    "pyhanko>=0.37",  # pdf.sign, PAdES B-B (plan task 31)
+    "cryptography>=44",  # cert.create; BestAvailableEncryption .p12 is AES-256
+    "python-docx>=1.1",  # pdf.to-docx output (plan task 32); lxml is already here via pikepdf
+]
+# office.to-pdf counts the pages of LibreOffice's output (office_to_pdf._check_pages).
+office = ["pikepdf>=9"]
+# OpenCV-headless: scan.clean deskew (plan task 40). Pulls numpy.
+ocr = ["ocrmypdf>=17", "opencv-python-headless>=4.10"]
+# comic.to-pdf (img2pdf) and pdf.to-cbz (pypdfium2). Calibre, Pandoc and djvulibre are binaries
+# in the worker-ebook image (docker/Dockerfile), not Python packages. libarchive-c reads CBR
+# (filex/tools/_archive.py) through the system libarchive13; defusedxml parses FB2/OPF (_xml.py).
+ebook = [
+    "img2pdf>=0.6",
+    "pikepdf>=9",  # ebook.convert strips external PDF streams (task 64); img2pdf needs it too
+    "pypdfium2>=5",
+    "pillow>=10.3",
+    "libarchive-c>=5.1",
+    "defusedxml>=0.7.1",
+]
+dev = ["pytest>=8", "httpx>=0.27", "ruff>=0.6", "fakeredis>=2.26", "defusedxml>=0.7.1"]
+
+[tool.setuptools.packages.find]
+include = ["filex*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+# Lint and format Python only: never rewrite code samples inside Markdown docs or skills.
+include = ["*.py", "*.pyi"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,39 @@
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# Web
+node_modules/
+web/dist/
+
+# Generated test files
+tests/corpus/generated/
+
+# Docker secret files (scripts/make_secrets.py)
+secrets/
+# Private keys and certificates must never be committed (review H8)
+*.p12
+*.pfx
+*.key
+*.pem
+
+# Playwright output
+web/test-results/
+web/playwright-report/
+
+*.tsbuildinfo
+
+# Local tool setup (never committed)
+CLAUDE.md
+.claude/
+.claude/agent-office/

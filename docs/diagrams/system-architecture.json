@@ -1,0 +1,411 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "FileX System Architecture",
+    "output": "docs/diagrams/system-architecture.html",
+    "quality_profile": "showcase",
+    "locale": "en"
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "external",
+      "label": "Browser",
+      "sublabel": "local user or invited users",
+      "pos": [
+        40,
+        280
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "webui",
+      "type": "frontend",
+      "label": "Web UI",
+      "sublabel": "React + Vite SPA",
+      "pos": [
+        330,
+        280
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "tag": "served by API"
+    },
+    {
+      "id": "restclients",
+      "type": "external",
+      "label": "REST clients",
+      "sublabel": "scripts \u00b7 fxt_ token",
+      "pos": [
+        645,
+        90
+      ],
+      "size": [
+        210,
+        64
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "FastAPI service",
+      "sublabel": "auth \u00b7 uploads \u00b7 planner \u00b7 links",
+      "pos": [
+        645,
+        262
+      ],
+      "size": [
+        210,
+        100
+      ],
+      "tag": "127.0.0.1 \u00b7 HTTPS proxy or LAN bind"
+    },
+    {
+      "id": "redis",
+      "type": "messagebus",
+      "label": "Redis",
+      "sublabel": "streams \u00b7 job hashes \u00b7 ACLs",
+      "pos": [
+        960,
+        247
+      ],
+      "size": [
+        170,
+        130
+      ],
+      "tag": "TTL \u00b7 no persistence"
+    },
+    {
+      "id": "wcore",
+      "type": "backend",
+      "label": "worker-core",
+      "sublabel": "qpdf \u00b7 pikepdf \u00b7 gs \u00b7 pyHanko",
+      "pos": [
+        1215,
+        80
+      ],
+      "size": [
+        240,
+        64
+      ],
+      "tag": "always on"
+    },
+    {
+      "id": "woffice",
+      "type": "backend",
+      "label": "worker-office",
+      "sublabel": "LibreOffice \u00b7 WeasyPrint",
+      "pos": [
+        1215,
+        180
+      ],
+      "size": [
+        240,
+        64
+      ],
+      "tag": "profile: office (default)"
+    },
+    {
+      "id": "wocr",
+      "type": "backend",
+      "label": "worker-ocr",
+      "sublabel": "OCRmyPDF \u00b7 Tesseract \u00b7 unpaper",
+      "pos": [
+        1215,
+        280
+      ],
+      "size": [
+        240,
+        64
+      ],
+      "tag": "profile: ocr (default)"
+    },
+    {
+      "id": "webook",
+      "type": "backend",
+      "label": "worker-ebook",
+      "sublabel": "Calibre \u00b7 Pandoc \u00b7 djvulibre",
+      "pos": [
+        1215,
+        380
+      ],
+      "size": [
+        240,
+        64
+      ],
+      "tag": "profile: ebook (default)"
+    },
+    {
+      "id": "wai",
+      "type": "backend",
+      "label": "worker-ai + ollama",
+      "sublabel": "local LLM \u00b7 own ai network",
+      "pos": [
+        1215,
+        580
+      ],
+      "size": [
+        240,
+        64
+      ],
+      "tag": "profile: ai \u00b7 deferred"
+    },
+    {
+      "id": "wml",
+      "type": "backend",
+      "label": "worker-ml",
+      "sublabel": "ONNX upscaling \u00b7 ML OCR",
+      "pos": [
+        1215,
+        480
+      ],
+      "size": [
+        240,
+        64
+      ],
+      "tag": "profile: ml \u00b7 R2"
+    },
+    {
+      "id": "datavol",
+      "type": "database",
+      "label": "/data volume",
+      "sublabel": "jobs/<id>: in \u00b7 steps \u00b7 out",
+      "pos": [
+        1550,
+        80
+      ],
+      "size": [
+        160,
+        564
+      ],
+      "tag": "auto-deleted"
+    },
+    {
+      "id": "signin",
+      "type": "external",
+      "label": "Sign-in server",
+      "sublabel": "optional \u00b7 Supabase-compatible",
+      "pos": [
+        330,
+        90
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "tag": "users + sessions"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Docker host \u00b7 docker compose",
+      "wraps": [
+        "restclients",
+        "api",
+        "redis",
+        "wcore",
+        "woffice",
+        "wocr",
+        "webook",
+        "wml",
+        "datavol",
+        "wai"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "internal network \u00b7 no egress \u00b7 seccomp per step",
+      "wraps": [
+        "wcore",
+        "woffice",
+        "wocr",
+        "webook",
+        "wml",
+        "wai"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "browser-ui",
+      "from": "browser",
+      "to": "webui",
+      "label": "HTTP local \u00b7 HTTPS on LAN",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ui-api",
+      "from": "webui",
+      "to": "api",
+      "label": "REST /api/v1 \u00b7 Bearer",
+      "variant": "emphasis"
+    },
+    {
+      "id": "clients-api",
+      "from": "restclients",
+      "to": "api",
+      "label": "Bearer fxt_ token",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "api-redis",
+      "from": "api",
+      "to": "redis",
+      "label": "enqueue step",
+      "variant": "emphasis"
+    },
+    {
+      "id": "q-core",
+      "from": "redis",
+      "to": "wcore",
+      "label": "q:core"
+    },
+    {
+      "id": "q-office",
+      "from": "redis",
+      "to": "woffice",
+      "label": "q:office",
+      "variant": "dashed"
+    },
+    {
+      "id": "q-ocr",
+      "from": "redis",
+      "to": "wocr",
+      "label": "q:ocr",
+      "variant": "dashed"
+    },
+    {
+      "id": "q-ebook",
+      "from": "redis",
+      "to": "webook",
+      "label": "q:ebook",
+      "variant": "dashed"
+    },
+    {
+      "id": "q-ml",
+      "from": "redis",
+      "to": "wml",
+      "label": "q:ml",
+      "variant": "dashed"
+    },
+    {
+      "id": "q-ai",
+      "from": "redis",
+      "to": "wai",
+      "label": "q:ai",
+      "variant": "dashed"
+    },
+    {
+      "id": "core-data",
+      "from": "wcore",
+      "to": "datavol",
+      "label": "r/w"
+    },
+    {
+      "id": "office-data",
+      "from": "woffice",
+      "to": "datavol",
+      "label": "r/w"
+    },
+    {
+      "id": "ocr-data",
+      "from": "wocr",
+      "to": "datavol",
+      "label": "r/w"
+    },
+    {
+      "id": "ebook-data",
+      "from": "webook",
+      "to": "datavol",
+      "label": "r/w"
+    },
+    {
+      "id": "ml-data",
+      "from": "wml",
+      "to": "datavol",
+      "label": "r/w"
+    },
+    {
+      "id": "ai-data",
+      "from": "wai",
+      "to": "datavol",
+      "label": "r/w"
+    },
+    {
+      "id": "api-data",
+      "from": "api",
+      "to": "datavol",
+      "label": "stream upload \u00b7 download",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "via": [
+        [
+          750,
+          710
+        ],
+        [
+          1630,
+          710
+        ]
+      ]
+    },
+    {
+      "id": "browser-signin",
+      "from": "browser",
+      "to": "signin",
+      "label": "sign-in \u00b7 supabase-js"
+    },
+    {
+      "id": "api-signin",
+      "from": "api",
+      "to": "signin",
+      "label": "GET /auth/v1/user"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Always on, plus default profiles",
+      "items": [
+        "API (serves the UI, janitor), Redis, worker-core",
+        "COMPOSE_PROFILES=office,ocr,ebook by default",
+        "One heavy-step slot: office, ocr and ebook never peak together"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Auth (ADR-0009, ADR-0011)",
+      "items": [
+        "Local mode by default (ADR-0011); optional sign-in server verifies each Bearer token, cached up to 60 s",
+        "Allowlist: user id or app_metadata.filex; fails closed",
+        "Hashed fxt_ tokens for scripts; refuses to start with no auth"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Step hand-off",
+      "items": [
+        "A worker reads its own q:<group> stream",
+        "On success it adds the next step to the next group's stream",
+        "Downloads: 5-minute signed links, attachments only"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Sandbox (ADR-0007)",
+      "items": [
+        "Workers: no network, read-only FS, cap_drop ALL, non-root",
+        "Each step: child with rlimits + seccomp (no sockets); escaped processes killed",
+        "Redis ACLs; results kept 24 h, inputs deleted at job end"
+      ]
+    }
+  ]
+}

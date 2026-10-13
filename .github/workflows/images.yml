@@ -1,0 +1,86 @@
+# Images (plan tasks 11 and 66): build every image (linux/amd64), check each image's runtime
+# imports, run each worker group's tool tests, tool examples under the seccomp filter (task 53)
+# and, in worker-core, the sandbox tests inside the image as uid 10001; audit each image's
+# Python lockfile (pip-audit) and the web UI's runtime npm packages; scan each image for fixable
+# critical vulnerabilities.
+name: Images
+
+on:
+  # Owner decision (2026-10-11): CI runs only on demand to save GitHub Actions minutes; start it
+  # from the Actions tab or: gh workflow run images.yml
+  workflow_dispatch:
+  # The one exception (task 66, security review M-1): a weekly rebuild WITHOUT the layer cache,
+  # so Debian security fixes for Ghostscript, LibreOffice, poppler and friends, and new CVEs in
+  # the locked Python and npm packages, turn this run red (GitHub e-mails the owner) within a
+  # week instead of whenever someone remembers. It only builds and checks: a running install
+  # keeps its old images until it is rebuilt there. ~5 image builds a week;
+  # ci.yml stays manual-only. Mondays 03:17 UTC.
+  schedule:
+    - cron: "17 3 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: images-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  TRIVY_IMAGE: aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
+
+jobs:
+  image:
+    name: ${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: worker-core, group: core }
+          - { target: worker-office, group: office }
+          - { target: worker-ocr, group: ocr }
+          - { target: worker-ebook, group: ebook }
+          - { target: api, group: api }
+    env:
+      IMAGE: filex-ci-${{ matrix.target }}:test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: ${{ matrix.target }}
+          platforms: linux/amd64
+          load: true
+          tags: ${{ env.IMAGE }}
+          # Weekly run: fresh base pull and no cached layers, or apt-get would never run again.
+          pull: ${{ github.event_name == 'schedule' }}
+          no-cache: ${{ github.event_name == 'schedule' }}
+          cache-from: type=gha,scope=${{ matrix.target }}
+          cache-to: type=gha,scope=${{ matrix.target }},mode=max
+      # api: only the import check (no engines to test).
+      - name: Tests inside the image
+        run: sh scripts/ci/image-tests.sh "${{ matrix.group }}" "$IMAGE"
+      # The lockfile this image installed from (docker/Dockerfile). Any known vulnerability fails.
+      - name: pip-audit (requirements/${{ matrix.group }}.txt)
+        run: >-
+          pipx run --spec pip-audit==2.10.1 pip-audit --progress-spinner off
+          --disable-pip --require-hashes -r "requirements/${{ matrix.group }}.txt"
+      - name: npm audit (web UI runtime packages)
+        if: matrix.group == 'api'
+        working-directory: web
+        run: npm audit --omit=dev
+      - name: Vulnerability scan (fixable CRITICAL fails)
+        run: |
+          docker save "$IMAGE" -o "$RUNNER_TEMP/image.tar"
+          docker run --rm -v "$RUNNER_TEMP:/scan" -e TRIVY_CACHE_DIR=/scan/trivy-cache \
+            "$TRIVY_IMAGE" image --quiet --input /scan/image.tar --scanners vuln \
+            --severity HIGH,CRITICAL --ignore-unfixed --format table
+          docker run --rm -v "$RUNNER_TEMP:/scan" -e TRIVY_CACHE_DIR=/scan/trivy-cache \
+            "$TRIVY_IMAGE" image --quiet --input /scan/image.tar --scanners vuln \
+            --severity CRITICAL --ignore-unfixed --skip-db-update --exit-code 1 --format table

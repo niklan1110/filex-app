@@ -1,0 +1,200 @@
+{
+  "schema_version": 2,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "FileX Job Lifecycle",
+    "output": "docs/diagrams/job-lifecycle.html",
+    "quality_profile": "showcase",
+    "locale": "en"
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Job status"
+    },
+    {
+      "id": "recovery",
+      "label": "Worker lost"
+    },
+    {
+      "id": "terminal",
+      "label": "Terminal exits"
+    }
+  ],
+  "states": [
+    {
+      "id": "queued",
+      "type": "start",
+      "label": "QUEUED",
+      "sublabel": "in q:<group> \u00b7 heavy slot",
+      "lane": "main",
+      "col": 0,
+      "step": "01",
+      "tag": "202 Accepted"
+    },
+    {
+      "id": "running",
+      "type": "active",
+      "label": "RUNNING",
+      "sublabel": "step in sandboxed child",
+      "lane": "main",
+      "col": 1,
+      "step": "02",
+      "tag": "progress 0..1"
+    },
+    {
+      "id": "stepdone",
+      "type": "decision",
+      "label": "Step done",
+      "sublabel": "more steps?",
+      "lane": "main",
+      "col": 2,
+      "step": "03",
+      "tag": "hand-off"
+    },
+    {
+      "id": "succeeded",
+      "type": "success",
+      "label": "SUCCEEDED",
+      "sublabel": "results in out/",
+      "lane": "main",
+      "col": 3,
+      "step": "04",
+      "tag": "downloadable"
+    },
+    {
+      "id": "reclaim",
+      "type": "waiting",
+      "label": "Pending reclaim",
+      "sublabel": "XAUTOCLAIM after timeout",
+      "lane": "recovery",
+      "col": 2,
+      "tag": "at-least-once"
+    },
+    {
+      "id": "cancelled",
+      "type": "failure",
+      "label": "CANCELLED",
+      "sublabel": "files deleted now",
+      "lane": "terminal",
+      "col": 0,
+      "tag": "terminal"
+    },
+    {
+      "id": "failed",
+      "type": "failure",
+      "label": "FAILED",
+      "sublabel": "error.code set",
+      "lane": "terminal",
+      "col": 1,
+      "tag": "terminal"
+    },
+    {
+      "id": "expired",
+      "type": "neutral",
+      "label": "Expired",
+      "sublabel": "hash + files gone, 404",
+      "lane": "terminal",
+      "col": 4,
+      "tag": "janitor"
+    }
+  ],
+  "transitions": [
+    {
+      "from": "queued",
+      "to": "running",
+      "label": "slot taken \u00b7 child starts"
+    },
+    {
+      "from": "running",
+      "to": "stepdone",
+      "label": "exit 0"
+    },
+    {
+      "from": "stepdone",
+      "to": "succeeded",
+      "label": "last step"
+    },
+    {
+      "from": "stepdone",
+      "to": "queued",
+      "label": "XADD next group",
+      "variant": "emphasis",
+      "route": "top-channel"
+    },
+    {
+      "from": "succeeded",
+      "to": "expired",
+      "label": "24 h retention",
+      "variant": "dashed"
+    },
+    {
+      "from": "running",
+      "to": "failed",
+      "label": "error \u00b7 timeout \u00b7 limit",
+      "variant": "security"
+    },
+    {
+      "from": "running",
+      "to": "reclaim",
+      "label": "runner died",
+      "variant": "dashed"
+    },
+    {
+      "from": "reclaim",
+      "to": "running",
+      "label": "redeliver once"
+    },
+    {
+      "from": "reclaim",
+      "to": "failed",
+      "label": "WORKER_LOST",
+      "variant": "security"
+    },
+    {
+      "from": "queued",
+      "to": "cancelled",
+      "label": "DELETE"
+    },
+    {
+      "from": "running",
+      "to": "cancelled",
+      "label": "DELETE \u00b7 kill"
+    },
+    {
+      "from": "failed",
+      "to": "expired",
+      "label": "TTL",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Steps",
+      "items": [
+        "A job is an ordered list of steps, one tool each",
+        "Between steps the job stays RUNNING",
+        "Each step writes only to steps/<n>/, cleared first, so a rerun is safe"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Redelivery",
+      "items": [
+        "Only when the worker container itself dies",
+        "Engine crash or limit inside the child fails the step at once",
+        "At most two deliveries per step"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Retention",
+      "items": [
+        "Inputs and intermediates deleted at any terminal state",
+        "Results kept 24 h after finishing (FILEX_RETENTION_MIN=1440)",
+        "Queued or running jobs capped at 24 h"
+      ]
+    }
+  ]
+}

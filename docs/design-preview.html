@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FileX Broadsheet Preview</title>
+<meta name="description" content="FileX design tokens v1 (Broadsheet, concept B) and the key screens, light and dark. Reference for the web app.">
+<!-- The real tokens. Open this file from the repo so the relative paths resolve. -->
+<link rel="stylesheet" href="../web/src/styles/tokens.css">
+<script>
+  // Apply the saved theme before first paint (no flash). Storage may be blocked.
+  // ?theme=light|dark overrides (handy for screenshots and testing).
+  try { var t = new URLSearchParams(location.search).get("theme") || localStorage.getItem("filex-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+<style>
+/* tokens.css points at /fonts/ (the app's public dir). From file:// that path
+   does not exist, so the preview re-declares the same face with a relative URL.
+   The later rule wins. */
+@font-face {
+  font-family: "Archivo";
+  src: url("../web/public/fonts/archivo-latin-wdth-wght.woff2") format("woff2");
+  font-weight: 400 900; font-stretch: 100% 125%; font-style: normal; font-display: swap;
+}
+
+/* ============================================================
+   Reference component CSS. Everything below reads tokens only.
+   Web app: port these rules into components; do not copy hex.
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--color-bg); color: var(--color-text);
+  font: var(--weight-regular) var(--text-md)/var(--leading-md) var(--font-sans);
+}
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+p { margin: 0; text-wrap: pretty; }
+a { color: var(--color-link); text-underline-offset: 0.2em; }
+code, kbd { font-family: var(--font-mono); }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: var(--focus-ring-width) solid var(--color-focus); outline-offset: var(--focus-ring-offset); }
+[hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--color-text-muted); }
+.meta { font: var(--weight-semibold) var(--text-xs)/var(--leading-xs) var(--font-mono); color: var(--color-text-muted); }
+.eyebrow { font: var(--weight-semibold) var(--text-2xs)/var(--leading-2xs) var(--font-mono); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--color-text-muted); }
+.ico { width: 24px; height: 24px; flex: none; }
+.ico-20 { width: 20px; height: 20px; flex: none; }
+.ico-18 { width: 18px; height: 18px; flex: none; }
+.ico-16 { width: 16px; height: 16px; flex: none; }
+.ico-14 { width: 14px; height: 14px; flex: none; }
+.skip { position: absolute; left: var(--space-4); top: -100px; z-index: var(--z-toast); background: var(--color-accent); color: var(--color-on-accent); padding: var(--space-2) var(--space-4); }
+.skip:focus { top: var(--space-2); }
+
+/* Folded corner, shared by fields, the tool header, the drop card, sign-in
+   panel, logo mark and drop icon. Set --fold and --fold-color per use. */
+.folded { position: relative; clip-path: polygon(0 0, calc(100% - var(--fold)) 0, 100% var(--fold), 100% 100%, 0 100%); }
+.folded::before {
+  content: ""; position: absolute; top: 0; right: 0; width: var(--fold); height: var(--fold);
+  background: linear-gradient(to bottom left, transparent 50%, var(--fold-color) 50%);
+}
+.cat-organize { --cat: var(--cat-organize); } .cat-optimize { --cat: var(--cat-optimize); }
+.cat-convert { --cat: var(--cat-convert); }   .cat-ocr { --cat: var(--cat-ocr); }
+.cat-edit { --cat: var(--cat-edit); }         .cat-security { --cat: var(--cat-security); }
+.cat-ebook { --cat: var(--cat-ebook); }       .cat-compare { --cat: var(--cat-compare); }
+.cat-ai { --cat: var(--cat-ai); }
+.field-surface {
+  background: var(--cat); color: var(--color-on-cat); border: var(--border-hair) solid var(--field-border);
+  --fold-color: color-mix(in srgb, var(--cat) var(--fold-mix), #000);
+}
+
+/* ---------- Preview chrome (not part of the app) ---------- */
+.pv-intro { max-width: var(--content-max); margin: 0 auto; padding: var(--space-8) var(--page-gutter) 0; }
+.pv-intro h1 { font-weight: var(--weight-heavy); font-stretch: var(--stretch-wide); font-size: var(--display-page); line-height: 1; letter-spacing: var(--tracking-display); }
+.pv-intro p { margin-top: var(--space-3); max-width: 62ch; color: var(--color-text-muted); }
+.pv-section { margin-top: var(--space-16); }
+.pv-label { max-width: var(--content-max); margin: 0 auto var(--space-3); padding: 0 var(--page-gutter); }
+.pv-frame { border-block: var(--border-hair) solid var(--color-border); background: var(--color-bg); position: relative; overflow: hidden; }
+.pv-tools { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
+
+/* ---------- Header ---------- */
+.app-header { background: var(--color-bg); border-bottom: var(--border-hair) solid var(--color-text); }
+.app-header .inner {
+  max-width: var(--content-max); margin: 0 auto; display: flex; align-items: center; flex-wrap: wrap;
+  gap: var(--space-3); padding: var(--space-2) var(--page-gutter); min-height: var(--header-h);
+}
+.brand { display: flex; align-items: center; gap: var(--space-2-5); color: var(--color-text); text-decoration: none; font-weight: var(--weight-heavy); font-stretch: var(--stretch-wide); font-size: var(--display-brand); letter-spacing: var(--tracking-section); }
+.mark { --fold: var(--fold-xs); --fold-color: var(--color-text-muted); width: 28px; height: 32px; display: grid; place-items: center; background: var(--color-text); color: var(--color-bg); }
+.nav { display: flex; gap: var(--space-5); order: 3; width: 100%; }
+.nav a, .nav button { display: inline-flex; align-items: center; min-height: var(--control-md); color: var(--color-text-muted); text-decoration: none; font-weight: var(--weight-semibold); border: 0; border-bottom: var(--border-heavy) solid transparent; background: none; padding: 0; cursor: pointer; }
+.nav a:hover, .nav button:hover { color: var(--color-text); }
+.nav a[aria-current="page"] { color: var(--color-text); border-bottom-color: var(--color-text); }
+.nav .signout-m { margin-left: auto; }
+.hdr-right { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); }
+.user, .signout-d { display: none; }
+.user { font: var(--weight-medium) var(--text-xs)/1 var(--font-mono); color: var(--color-text-muted); }
+.btn-text { display: inline-flex; align-items: center; min-height: var(--control-md); padding: 0 var(--space-2); border: 0; background: none; color: var(--color-text); font-weight: var(--weight-semibold); text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; }
+.segmented { display: inline-flex; margin: 0; padding: 0; border: var(--border-hair) solid var(--color-border-strong); border-radius: var(--radius-sm); }
+.segmented label { position: relative; display: inline-flex; align-items: center; min-height: var(--segment-h); padding: 0 var(--space-2); font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--color-text-muted); cursor: pointer; }
+.segmented input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.segmented label:has(:checked) { background: var(--color-accent); color: var(--color-on-accent); }
+.segmented label:has(:focus-visible) { outline: var(--focus-ring-width) solid var(--color-focus); outline-offset: var(--focus-ring-offset); z-index: 1; }
+@media (min-width: 64rem) {
+  .app-header .inner { gap: var(--space-6); }
+  .nav { order: 0; width: auto; }
+  .nav .signout-m { display: none; }
+  .user, .signout-d { display: inline-flex; }
+  .segmented label { padding: 0 var(--space-3); }
+}
+.banner { display: flex; gap: var(--space-2-5); align-items: flex-start; justify-content: center; padding: var(--space-3) var(--page-gutter); background: var(--color-warning-bg); color: var(--color-warning-fg); font-size: var(--text-ui); line-height: var(--leading-ui); border-bottom: var(--border-hair) solid var(--color-text); }
+.banner .ico-18 { margin-top: 2px; }
+
+/* ---------- Page shells ---------- */
+.main { max-width: var(--content-max); margin: 0 auto; padding: var(--page-top) var(--page-gutter) var(--space-16); }
+.main-jobs { max-width: var(--jobs-max); }
+.main-result { max-width: var(--result-max); }
+.page-title { font-weight: var(--weight-heavy); font-stretch: var(--stretch-wide); font-size: var(--display-page); line-height: var(--leading-display); letter-spacing: var(--tracking-display); }
+.h-section { font-size: var(--text-xl); line-height: var(--leading-xl); font-weight: var(--weight-heavy); font-stretch: var(--stretch-wide); letter-spacing: var(--tracking-section); }
+.rule-open { border-top: var(--border-strong) solid var(--color-text); padding-top: var(--space-5); }
+
+/* ---------- Catalog ---------- */
+.search { position: relative; }
+.search > .ico { position: absolute; left: var(--space-5); top: 50%; translate: 0 -50%; pointer-events: none; }
+.search input {
+  width: 100%; min-height: var(--control-search); padding: 0 var(--space-16) 0 calc(var(--space-5) + 24px + var(--space-4));
+  font-size: var(--search-font); font-weight: var(--weight-medium); color: var(--color-text);
+  background: var(--color-surface); border: var(--border-strong) solid var(--color-text); border-radius: var(--radius-sm);
+}
+.search input::placeholder { color: var(--color-text-muted); opacity: 1; }
+.search .hint { position: absolute; right: var(--space-4); top: 50%; translate: 0 -50%; }
+@media (pointer: coarse) { .search .hint { display: none; } }
+kbd { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 var(--space-1-5); font: var(--weight-semibold) var(--text-xs)/1 var(--font-mono); color: var(--color-text); background: var(--color-surface); border: var(--border-hair) solid var(--color-text); border-bottom-width: var(--border-heavy); border-radius: var(--radius-sm); }
+.lede { margin-top: var(--space-3); font-size: var(--text-sm); line-height: var(--leading-sm); color: var(--color-text-muted); }
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-5); }
+.chip {
+  display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--chip-h); padding: 0 var(--space-3-5);
+  border: var(--border-hair) solid var(--color-border-strong); border-radius: var(--radius-sm);
+  background: var(--color-surface); color: var(--color-text); font-size: var(--text-ui); font-weight: var(--weight-semibold); cursor: pointer;
+}
+.chip:hover { border-color: var(--color-text); }
+.chip .sw { width: 12px; height: 12px; background: var(--cat); box-shadow: inset 0 0 0 1px var(--color-tile-border); }
+.chip[aria-pressed="true"] { background: var(--color-accent); color: var(--color-on-accent); border-color: var(--color-accent); font-weight: var(--weight-bold); }
+.bands { display: grid; gap: var(--space-2); margin-top: var(--space-8); }
+.band { --fold: var(--fold-md); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--band-gap); padding: var(--band-pad); }
+.band h2 { font-weight: var(--weight-heavy); font-stretch: var(--stretch-wide); font-size: var(--display-band); line-height: var(--leading-display); letter-spacing: var(--tracking-band); padding-right: var(--fold); }
+.band .count { margin-top: var(--space-2); font: var(--weight-semibold) var(--text-xs)/var(--leading-xs) var(--font-mono); }
+@media (min-width: 64rem) { .band { grid-template-columns: var(--band-head-w) minmax(0, 1fr); } .band h2 { padding-right: 0; } }
+.tiles { display: grid; gap: var(--space-2); grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--tile-min)), 1fr)); list-style: none; margin: 0; padding: 0; }
+.tile {
+  display: flex; gap: var(--space-3-5); align-items: flex-start; height: 100%; padding: var(--space-4);
+  background: var(--color-surface); color: var(--color-text); border: var(--border-hair) solid var(--color-tile-border); text-decoration: none;
+  transition-property: transform, border-color; transition-duration: var(--duration-fast); transition-timing-function: var(--ease-out);
+}
+.tile > .ico { margin-top: 1px; }
+@media (hover: hover) { .tile:hover { transform: translateY(calc(-1 * var(--motion-lift))); border-color: var(--color-text); } }
+.tile .t { display: block; font-size: var(--text-lg); line-height: var(--leading-lg); font-weight: var(--weight-bold); }
+.tile .s { display: block; margin-top: 2px; font-size: var(--text-sm); line-height: var(--leading-sm); color: var(--color-text-muted); text-wrap: pretty; }
+.tile .body { min-width: 0; }
+.fmts { margin-top: var(--space-2-5); display: flex; gap: var(--space-1-5); flex-wrap: wrap; }
+.fmt { padding: 1px var(--space-1-5); border: var(--border-hair) solid var(--color-border-strong); border-radius: var(--radius-sm); color: var(--color-text-muted); font: var(--weight-semibold) var(--text-2xs)/var(--leading-2xs) var(--font-mono); text-transform: uppercase; }
+.tile.off { background: var(--color-surface-2); border: var(--border-control) dashed var(--color-text); }
+.tile.off > .ico { color: var(--color-text-muted); }
+.tile.off .badge { margin-top: var(--space-2-5); }
+.badge { display: inline-flex; align-items: center; gap: var(--space-1-5); padding: 3px var(--space-2-5); border: var(--border-hair) solid transparent; border-radius: var(--radius-sm); font-size: var(--text-xs); line-height: var(--leading-xs); font-weight: var(--weight-bold); }
+.badge-warn { background: var(--color-warning-bg); color: var(--color-warning-fg); }
+.badge-ink { background: var(--color-text); color: var(--color-bg); }
+.badge-neutral { background: var(--color-surface-3); color: var(--color-text); }
+.badge-ok { background: var(--color-success-bg); color: var(--color-success-fg); }
+.badge-danger { background: var(--color-danger-bg); color: var(--color-danger-fg); }
+.conv { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-top: var(--space-4); }
+.conv h3 { margin-right: var(--space-2); font-size: var(--text-ui); font-weight: var(--weight-bold); }
+.conv a { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--control-md); padding: 0 var(--space-3-5); background: var(--color-surface); border: var(--border-hair) solid var(--color-tile-border); color: var(--color-text); font-size: var(--text-ui); font-weight: var(--weight-bold); text-decoration: none; }
+.conv a:hover { border-color: var(--color-text); }
+
+/* ---------- Tool page ---------- */
+.tool-head { --fold: var(--fold-lg); padding: var(--tool-head-pad); }
+.crumb { font: var(--weight-semibold) var(--text-xs)/var(--leading-xs) var(--font-mono); }
+.crumb a { color: inherit; }
+.tool-title-row { display: flex; gap: var(--space-2) var(--space-6); align-items: flex-end; flex-wrap: wrap; margin-top: var(--space-4); padding-right: var(--space-4); }
+.tool-title { font-weight: var(--weight-heavy); font-stretch: var(--stretch-wide); font-size: var(--display-tool); line-height: 1; letter-spacing: var(--tracking-display); }
+.tool-title-row p { margin-bottom: 3px; }
+.tool-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--tool-gap); margin-top: var(--space-8); align-items: start; }
+@media (min-width: 64rem) { .tool-grid { grid-template-columns: minmax(0, 1fr) var(--options-w); } }
+.dropzone { display: grid; place-items: center; text-align: center; gap: var(--space-3-5); min-height: var(--dropzone-min); padding: var(--space-6) var(--space-4); border: var(--border-strong) dashed var(--color-border-strong); background: var(--color-surface); transition: border-color var(--duration-fast) var(--ease-out); }
+@media (min-width: 64rem) { .dropzone { padding: var(--space-8) var(--space-6); } }
+.dropzone[data-active="true"] { border-color: var(--color-text); }
+.sheet { --fold: var(--fold-sm); --fold-color: var(--color-text-muted); width: 52px; height: 60px; display: grid; place-items: center; background: var(--color-text); color: var(--color-bg); transition: transform var(--duration-fast) var(--ease-out); }
+.dropzone[data-active="true"] .sheet { transform: translateY(calc(-1 * var(--motion-distance-sm))); }
+.dz-line { font-size: var(--text-lead); line-height: var(--leading-lead); font-weight: var(--weight-bold); font-stretch: var(--stretch-semi); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: var(--control-lg); padding: 0 var(--space-5); border-radius: var(--radius-sm); font-weight: var(--weight-semibold); text-decoration: none; cursor: pointer; }
+.btn-secondary { position: relative; border: var(--border-control) solid var(--color-text); background: transparent; color: var(--color-text); transition: background-color var(--duration-fast) var(--ease-out); }
+.btn-secondary:hover { background: var(--color-surface-2); }
+.btn-strong { font-weight: var(--weight-bold); }
+label.btn input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+label.btn:has(:focus-visible) { outline: var(--focus-ring-width) solid var(--color-focus); outline-offset: var(--focus-ring-offset); }
+.btn-primary {
+  min-height: var(--control-xl); padding: 0 var(--space-6); border: var(--border-hair) solid transparent;
+  background: var(--color-accent); color: var(--color-on-accent); font-size: var(--text-lg); font-weight: var(--weight-bold);
+  transition-property: transform, background-color; transition-duration: var(--duration-fast); transition-timing-function: var(--ease-out);
+}
+.btn-primary:hover { background: var(--color-accent-hover); color: var(--color-on-accent); }
+.btn-primary:active { background: var(--color-accent-pressed); transform: scale(var(--motion-scale-press)); }
+.btn-block { width: 100%; }
+.list-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); margin: var(--space-8) 0 var(--space-3); }
+.files { list-style: none; margin: 0; padding: 0; border-top: var(--border-strong) solid var(--color-text); }
+.files li { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1-5); padding: var(--space-2) 0; min-height: 60px; border-bottom: var(--border-hair) solid var(--color-border); }
+@media (min-width: 64rem) { .files li { gap: var(--space-3); } }
+.grip { width: 20px; height: 20px; flex: none; color: var(--color-text-muted); cursor: grab; }
+.fname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--weight-semibold); }
+.fsize { font: var(--weight-semibold) var(--text-sm)/var(--leading-sm) var(--font-mono); color: var(--color-text-muted); white-space: nowrap; }
+.row-btns { display: flex; gap: 2px; }
+.icon-btn { display: grid; place-items: center; width: var(--row-btn); height: var(--row-btn); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text); cursor: pointer; }
+.icon-btn:hover { background: var(--color-surface-2); }
+.icon-btn:disabled { color: var(--color-border-strong); cursor: default; background: transparent; }
+.row-bar { flex-basis: 100%; height: 4px; margin: 0 0 var(--space-1) 26px; background: var(--color-surface-3); position: relative; overflow: hidden; }
+.row-bar > span { position: absolute; inset: 0; background: var(--color-accent); transform-origin: left; transform: scaleX(var(--p)); transition: transform var(--duration-slow) var(--ease-in-out); }
+
+/* Options form */
+.options { border-top: var(--border-strong) solid var(--color-text); padding-top: var(--space-4); }
+.field { border: 0; border-top: var(--border-hair) solid var(--color-border); margin: var(--space-5) 0 0; padding: var(--space-4) 0 0; min-width: 0; }
+.label, .field legend { display: block; font-weight: var(--weight-semibold); margin-bottom: var(--space-2); }
+.field legend { float: left; width: 100%; padding: 0; }
+.field legend + * { clear: both; }
+.help { display: block; margin-top: var(--space-1-5); font-size: var(--text-sm); line-height: var(--leading-sm); color: var(--color-text-muted); }
+.input { width: 100%; min-height: var(--control-md); padding: 0 var(--space-3); color: var(--color-text); background: var(--color-surface); border: var(--border-hair) solid var(--color-border-strong); border-radius: var(--radius-sm); }
+.input:focus-visible { border-color: var(--color-text); }
+.input.mono { font-family: var(--font-mono); }
+.input[aria-invalid="true"] { border: var(--border-strong) solid var(--color-danger-fg); padding: 0 calc(var(--space-3) - 1px); }
+.err { display: flex; gap: var(--space-1-5); align-items: center; margin-top: var(--space-1-5); font-size: var(--text-sm); line-height: var(--leading-sm); font-weight: var(--weight-semibold); color: var(--color-danger-fg); }
+.affix { display: flex; }
+.affix .input { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.suffix { display: grid; place-items: center; padding: 0 var(--space-3-5); border: var(--border-hair) solid var(--color-border-strong); border-left: 0; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; background: var(--color-surface-2); color: var(--color-text-muted); font: var(--weight-semibold) var(--text-sm) var(--font-mono); }
+.affix-btn { display: grid; place-items: center; flex: none; width: var(--control-md); border: var(--border-hair) solid var(--color-border-strong); border-left: 0; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; background: var(--color-surface); color: var(--color-text); cursor: pointer; }
+.affix-btn[aria-pressed="true"] { background: var(--color-accent); color: var(--color-on-accent); }
+.opts { display: grid; gap: var(--space-2); grid-template-columns: 1fr 1fr; }
+.opt { position: relative; display: block; margin: 1px; padding: var(--space-3) var(--space-3-5); border: var(--border-hair) solid var(--color-border-strong); border-radius: var(--radius-sm); background: var(--color-surface); cursor: pointer; }
+.opt:hover { border-color: var(--color-text); }
+.opt input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.opt .t { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); font-weight: var(--weight-bold); }
+.opt .d { display: block; margin-top: 2px; font-size: var(--text-sm); line-height: var(--leading-sm); color: var(--color-text-muted); }
+.opt .t svg { visibility: hidden; }
+.opt:has(:checked) { margin: 0; border: var(--border-strong) solid var(--color-accent); background: var(--color-accent); color: var(--color-on-accent); }
+.opt:has(:checked) .d { color: var(--color-on-accent-muted); }
+.opt:has(:checked) .t svg { visibility: visible; }
+.opt:has(:focus-visible) { outline: var(--focus-ring-width) solid var(--color-focus); outline-offset: var(--focus-ring-offset); }
+.switch { position: relative; display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); cursor: pointer; }
+.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.track { flex: none; position: relative; width: 48px; height: 26px; border-radius: var(--radius-sm); background: var(--color-surface-3); border: var(--border-control) solid var(--color-border-strong); }
+.thumb { position: absolute; top: 2.5px; left: 2.5px; width: 18px; height: 18px; border-radius: var(--radius-xs); background: var(--color-text-muted); transition: transform var(--duration-fast) var(--ease-out); }
+.switch input:checked + .track { background: var(--color-accent); border-color: var(--color-accent); }
+.switch input:checked + .track .thumb { background: var(--color-on-accent); transform: translateX(22px); }
+.switch input:focus-visible + .track { outline: var(--focus-ring-width) solid var(--color-focus); outline-offset: var(--focus-ring-offset); }
+.pos-grid { display: grid; grid-template-columns: repeat(3, var(--control-md)); gap: var(--space-1); }
+.pos-grid label { position: relative; display: grid; place-items: center; height: var(--control-md); border: var(--border-hair) solid var(--color-border-strong); border-radius: var(--radius-sm); background: var(--color-surface); cursor: pointer; }
+.pos-grid label::after { content: ""; width: 8px; height: 8px; background: var(--color-text-muted); }
+.pos-grid input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.pos-grid label:has(:checked) { background: var(--color-accent); border-color: var(--color-accent); }
+.pos-grid label:has(:checked)::after { background: var(--color-on-accent); }
+.pos-grid label:has(:focus-visible) { outline: var(--focus-ring-width) solid var(--color-focus); outline-offset: var(--focus-ring-offset); z-index: 1; }
+.aux { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.aux .btn { min-height: var(--control-md); padding: 0 var(--space-4); }
+.submit-bar { position: sticky; bottom: 0; margin-top: var(--space-6); padding: var(--space-4) 0; background: var(--color-bg); border-top: var(--border-strong) solid var(--color-text); display: grid; gap: var(--space-2-5); }
+
+/* Full-page drop overlay */
+.overlay {
+  position: fixed; inset: 0; z-index: var(--z-overlay); display: grid; place-items: start center;
+  padding: clamp(var(--space-16), 20vh, 13.75rem) var(--space-4) var(--space-4); background: var(--color-scrim);
+  opacity: 0; visibility: hidden;
+  transition: opacity var(--duration-fast) var(--ease-in), visibility 0s linear var(--duration-fast);
+}
+.overlay[data-open="true"] { opacity: 1; visibility: visible; transition: opacity var(--duration-normal) var(--ease-out), visibility 0s; }
+.drop-card {
+  --fold: var(--fold-lg); width: min(36rem, 100%); padding: var(--space-12) var(--space-8); text-align: center;
+  outline: var(--border-strong) dashed var(--color-on-cat); outline-offset: -10px;
+  transform: translateY(var(--motion-distance-sm)); transition: transform var(--duration-normal) var(--ease-out);
+}
+.overlay[data-open="true"] .drop-card { transform: none; }
+.drop-card .sheet { margin: 0 auto var(--space-5); background: var(--color-on-cat); color: var(--cat); }
+.drop-card .sheet::before { display: none; }
+.drop-big { font-size: var(--display-drop); line-height: 1; font-weight: var(--weight-heavy); font-stretch: var(--stretch-wide); letter-spacing: var(--tracking-display); }
+.drop-esc { margin-top: var(--space-5); display: flex; gap: var(--space-2); justify-content: center; align-items: center; font-size: var(--text-ui); }
+
+/* ---------- Progress ---------- */
+.job-head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.job-title { font-size: var(--text-xl); line-height: var(--leading-xl); font-weight: var(--weight-bold); min-width: 0; overflow-wrap: anywhere; }
+.pct-row { display: flex; align-items: flex-end; gap: var(--space-2) var(--space-6); flex-wrap: wrap; margin-top: var(--space-4); }
+.pct { font-size: var(--display-percent); line-height: var(--leading-poster); font-weight: var(--weight-heavy); font-stretch: var(--stretch-wide); letter-spacing: var(--tracking-percent); font-variant-numeric: tabular-nums; }
+.pct-row .muted { margin-bottom: var(--space-1-5); }
+.bar { position: relative; height: 12px; margin-top: var(--space-4); background: var(--color-surface-3); overflow: hidden; }
+.bar > span { position: absolute; inset: 0; background: var(--color-accent); transform-origin: left; transform: scaleX(var(--p)); transition: transform var(--duration-slow) var(--ease-in-out); }
+.bar.indet > span { inset: 0 auto 0 0; width: 40%; transform: none; animation: fx-ind var(--duration-indeterminate) var(--ease-in-out) infinite; }
+@keyframes fx-ind { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+.steps { list-style: none; margin: var(--space-6) 0 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 64rem) { .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.steps li { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3-5) var(--space-4) var(--space-3-5) 0; border-top: var(--border-heavy) solid var(--color-text); }
+.steps li.wait { border-top: var(--border-hair) solid var(--color-border-strong); padding-top: calc(var(--space-3-5) + 2px); color: var(--color-text-muted); }
+.steps .st { display: block; font-weight: var(--weight-bold); }
+.steps .sd { display: block; font-size: var(--text-sm); line-height: var(--leading-sm); color: var(--color-text-muted); }
+.step-done { flex: none; width: 22px; height: 22px; display: grid; place-items: center; background: var(--color-success-fg); color: var(--color-bg); }
+.spinner { flex: none; display: block; width: 22px; height: 22px; border-radius: 50%; border: 2.5px solid currentColor; border-top-color: transparent; animation: fx-spin var(--duration-spin) linear infinite; }
+@keyframes fx-spin { to { transform: rotate(1turn); } }
+.step-wait { flex: none; width: 22px; height: 22px; border: var(--border-control) solid var(--color-border-strong); }
+.statement { font-size: var(--display-statement); line-height: 1.1; font-weight: var(--weight-heavy); font-stretch: var(--stretch-wide); letter-spacing: var(--tracking-section); }
+.jobs { list-style: none; margin: var(--space-3) 0 0; padding: 0; border-top: var(--border-strong) solid var(--color-text); }
+.jobs li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1) var(--space-4); align-items: center; padding: var(--space-3) 0; border-bottom: var(--border-hair) solid var(--color-border); }
+.jobs a { font-weight: var(--weight-bold); color: var(--color-text); }
+.jobs .when { grid-column: 1 / -1; }
+@media (min-width: 64rem) { .jobs li { grid-template-columns: minmax(0, 1fr) auto 9rem 9rem; } .jobs .when { grid-column: auto; text-align: right; } }
+
+/* ---------- Result ---------- */
+.res-head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.res-ok { width: 32px; height: 32px; display: grid; place-items: center; background: var(--color-success-bg); color: var(--color-success-fg); }
+.res-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-6) var(--space-12); margin-top: var(--space-6); align-items: end; }
+@media (min-width: 64rem) { .res-grid { grid-template-columns: auto minmax(0, 1fr); } }
+.outcome { font-size: var(--display-outcome); line-height: var(--leading-outcome); font-weight: var(--weight-black); font-stretch: var(--stretch-wide); letter-spacing: var(--tracking-poster); font-variant-numeric: tabular-nums; }
+.figure { font-size: var(--display-figure); line-height: 1.1; font-weight: var(--weight-heavy); font-stretch: var(--stretch-semi); font-variant-numeric: tabular-nums; }
+.sizes { display: grid; gap: var(--space-2-5); margin-top: var(--space-5); }
+.size-row { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) 4.5rem; gap: var(--space-3); align-items: center; font-size: var(--text-sm); font-weight: var(--weight-semibold); }
+.size-row .v { text-align: right; font-family: var(--font-mono); }
+.size-bar { display: block; height: 20px; background: var(--color-border-strong); }
+.size-bar.now { background: var(--color-success-fg); }
+.ba { margin-top: var(--space-8); }
+.ba-side { display: none; gap: var(--space-6); grid-template-columns: 1fr 1fr; max-width: 720px; }
+.ba-slide { display: block; max-width: 28rem; }
+@media (min-width: 40rem) { .ba-side { display: grid; } .ba-slide { display: none; } }
+.ba figure { margin: 0; }
+.page-img { display: block; width: 100%; aspect-ratio: 1 / 1.414; outline: var(--border-hair) solid var(--outline-image); outline-offset: -1px; }
+.ba figcaption, .ba .cap { display: flex; justify-content: space-between; margin-top: var(--space-2); font: var(--weight-semibold) var(--text-xs)/var(--leading-xs) var(--font-mono); }
+.cmp { position: relative; overflow: hidden; outline: var(--border-hair) solid var(--outline-image); outline-offset: -1px; }
+.cmp .after { position: absolute; inset: 0; width: 100%; height: 100%; clip-path: inset(0 0 0 var(--pos)); }
+.cmp .handle { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 3px; background: var(--color-text); translate: -1px 0; }
+.ba input[type="range"] { width: 100%; margin-top: var(--space-2); min-height: var(--control-md); accent-color: var(--color-text); }
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; margin-top: var(--space-8); }
+.actions .btn-primary { flex: 1 1 100%; }
+@media (min-width: 64rem) { .actions .btn-primary { flex: 0 0 auto; padding: 0 var(--space-7); } }
+.expires { margin-left: auto; display: inline-flex; gap: var(--space-1-5); align-items: center; }
+.variant { margin-top: var(--space-8); padding: var(--space-4); border: var(--border-hair) dashed var(--color-border-strong); }
+
+/* ---------- Alerts ---------- */
+.alert { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3-5) var(--space-4); border: var(--border-strong) solid var(--color-danger-fg); background: var(--color-danger-bg); color: var(--color-danger-fg); font-size: var(--text-ui); line-height: var(--leading-ui); }
+.alert > svg { margin-top: 1px; }
+.alert strong { display: block; font-weight: var(--weight-bold); }
+.alert a { color: inherit; font-weight: var(--weight-bold); }
+.dz-compact { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4); border: var(--border-strong) dashed var(--color-border-strong); background: var(--color-surface); }
+.dz-compact .sheet { --fold: 10px; width: 36px; height: 42px; }
+.dz-compact .grow { flex: 1; min-width: 10rem; font-weight: var(--weight-bold); }
+
+/* ---------- Sign-in ---------- */
+.signin { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 45rem; }
+@media (min-width: 64rem) { .signin { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: 48rem; } }
+.si-panel { --fold: var(--fold-xl); --fold-color: var(--color-text-muted); display: flex; flex-direction: column; justify-content: space-between; gap: var(--space-4); padding: var(--space-6) var(--space-4); background: var(--color-accent); color: var(--color-on-accent); border: var(--border-hair) solid transparent; }
+.si-brand { display: flex; align-items: center; gap: var(--space-2-5); font-weight: var(--weight-heavy); font-stretch: var(--stretch-wide); font-size: var(--text-lead); }
+.si-brand .mark { --fold: 8px; width: 24px; height: 28px; background: var(--color-on-accent); color: var(--color-accent); }
+.si-brand .mark::before { display: none; }
+.wordmark { font-size: var(--display-wordmark); line-height: var(--leading-poster); font-weight: var(--weight-black); font-stretch: var(--stretch-wide); letter-spacing: var(--tracking-poster); }
+.si-sub { margin-top: var(--space-4); font-size: var(--text-lg); line-height: var(--leading-lg); color: var(--color-on-accent-muted); max-width: 30ch; }
+.si-form-wrap { display: grid; place-items: center; padding: var(--space-6) var(--space-4); }
+@media (min-width: 64rem) { .si-panel, .si-form-wrap { padding: var(--space-12); } }
+.si-form { width: min(26rem, 100%); }
+.si-form .page-title { line-height: 1; }
+
+/* ---------- Tokens section ---------- */
+.swatches { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.swatch { width: 7.5rem; background: var(--color-surface); border: var(--border-hair) solid var(--color-border); font-size: var(--text-2xs); line-height: var(--leading-2xs); }
+.swatch .chipc { height: 48px; border-bottom: var(--border-hair) solid var(--color-border); }
+.swatch .lab { padding: var(--space-1-5) var(--space-2); }
+.swatch .lab b { display: block; font-weight: var(--weight-bold); overflow-wrap: anywhere; }
+.swatch .lab span { font-family: var(--font-mono); color: var(--color-text-muted); }
+.ctable { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.ctable th, .ctable td { text-align: left; padding: var(--space-1-5) var(--space-2); border-bottom: var(--border-hair) solid var(--color-border); }
+.ctable td.r { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.specimen { display: grid; gap: var(--space-4); }
+.specimen > div { display: grid; gap: var(--space-1); border-top: var(--border-hair) solid var(--color-border); padding-top: var(--space-3); overflow-wrap: anywhere; }
+
+/* ---------- Reduced motion: loops stop themselves ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; border-top-color: currentColor; }
+  .bar.indet > span { animation: none; width: 100%; opacity: 0.5; }
+}
+
+/* ---------- Forced colours: anything that shows state by inverting to ink ---------- */
+@media (forced-colors: active) {
+  .chip[aria-pressed="true"], .segmented label:has(:checked), .opt:has(:checked), .pos-grid label:has(:checked),
+  .switch input:checked + .track, .affix-btn[aria-pressed="true"] {
+    forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: Highlight;
+  }
+  .opt:has(:checked) .d { color: HighlightText; }
+  .pos-grid label:has(:checked)::after, .switch input:checked + .track .thumb { forced-color-adjust: none; background: HighlightText; }
+  .thumb, .pos-grid label::after { forced-color-adjust: none; background: CanvasText; }
+  .bar, .row-bar { border: 1px solid CanvasText; }
+  .bar > span, .row-bar > span, .size-bar.now, .step-done { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+  .size-bar { forced-color-adjust: none; background: CanvasText; }
+  .folded::before { display: none; }
+}
+</style>
+</head>
+<body>
+<!-- Icon sprite: a copy of web/src/assets/icons.svg, inlined because browsers block external <use> on file://. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></symbol>
+<symbol id="i-merge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v5a4 4 0 0 0 4 4 4 4 0 0 1 4 4v5"></path><path d="M16 3v5a4 4 0 0 1-4 4"></path><path d="m13 18 3 3 3-3"></path></symbol>
+<symbol id="i-split" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v6a4 4 0 0 1-4 4H6"></path><path d="M12 9a4 4 0 0 0 4 4h2"></path><path d="m8 16-2-3 2-3M16 16l2-3-2-3"></path><path d="M12 13v8"></path></symbol>
+<symbol id="i-rotate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="9" rx="1"></rect><rect x="3" y="15" width="7" height="6" rx="1"></rect><rect x="14" y="15" width="7" height="6" rx="1"></rect></symbol>
+<symbol id="i-compress" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v6m0 0-3-3m3 3 3-3M12 21v-6m0 0-3 3m3-3 3 3"></path><path d="M4 12h16"></path></symbol>
+<symbol id="i-wrench" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0 5 5L21 13l-8 8-3-3 6.3-6.3"></path><path d="M14.7 6.3 13 4.6a4 4 0 0 0-5.6 5.6l1.7 1.7"></path></symbol>
+<symbol id="i-convert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3M20 16H7l3 3"></path></symbol>
+<symbol id="i-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="m21 16-5-5-9 9"></path></symbol>
+<symbol id="i-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5h16v2M12 5v14M9 19h6"></path></symbol>
+<symbol id="i-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M7 9h10M7 12h10M7 15h6"></path></symbol>
+<symbol id="i-sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"></path><path d="M19 17v4M17 19h4"></path></symbol>
+<symbol id="i-drop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0-12-4 4m4-4 4 4"></path><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"></path></symbol>
+<symbol id="i-stamp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21h14M6 17h12v-3a2 2 0 0 0-2-2h-1.5L14 8a2 2 0 1 0-4 0l-.5 4H8a2 2 0 0 0-2 2z"></path></symbol>
+<symbol id="i-hash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h14M5 15h14M10 3 8 21M16 3l-2 18"></path></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></symbol>
+<symbol id="i-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></symbol>
+<symbol id="i-eraser" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4-4 11-11 7 7-8 8z"></path><path d="M7 21h14"></path></symbol>
+<symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"></path></symbol>
+<symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="i-grip" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></symbol>
+<symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"></path></symbol>
+<symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></symbol>
+<symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></symbol>
+<symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4"></path><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M9 7V4h6v3"></path></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m0 0-5-5m5 5-5 5"></path></symbol>
+<symbol id="i-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 8l8 8M16 8l-8 8"></path></symbol>
+</defs></svg>
+<a class="skip" href="#catalog">Skip to the catalog</a>
+
+<div class="pv-intro">
+  <p class="eyebrow">FileX design tokens v1</p>
+  <h1 style="margin-top:var(--space-2)">Broadsheet</h1>
+  <p>The catalog reads like a newspaper index: each tool family is a full-width colour field with a large, wide heading, so you find the section first and the tool second. Ink is the only action colour. Outcomes like −62% are set at poster size. Every value on this page comes from <code>web/src/styles/tokens.css</code>; notes are in <code>docs/design.md</code>.</p>
+  <div class="pv-tools">
+    <button class="btn btn-secondary" type="button" id="sim-drag">Simulate a file drag</button>
+    <a class="btn btn-secondary" href="#tokens">Jump to tokens and contrast</a>
+  </div>
+</div>
+
+<!-- =================== 01 Catalog =================== -->
+<section class="pv-section" aria-labelledby="l-catalog">
+  <p class="pv-label meta" id="l-catalog">01 Catalog, with the open-mode banner</p>
+  <div class="pv-frame">
+    <header class="app-header">
+      <div class="inner">
+        <a class="brand" href="#"><span class="mark folded"><svg class="ico-16" aria-hidden="true"><use href="#i-logo"/></svg></span>FileX</a>
+        <nav class="nav" aria-label="Main">
+          <a href="#catalog" aria-current="page">Tools</a>
+          <a href="#progress">My jobs</a>
+          <button type="button" class="signout-m">Sign out</button>
+        </nav>
+        <div class="hdr-right">
+          <fieldset class="segmented">
+            <legend class="sr-only">Theme</legend>
+            <label><input type="radio" name="theme" value="system">System</label>
+            <label><input type="radio" name="theme" value="light">Light</label>
+            <label><input type="radio" name="theme" value="dark">Dark</label>
+          </fieldset>
+          <span class="user">ana@home.lan</span>
+          <button type="button" class="btn-text signout-d">Sign out</button>
+        </div>
+      </div>
+    </header>
+    <div class="banner" role="note"><svg class="ico-18" aria-hidden="true"><use href="#i-alert"/></svg><span><strong>Open mode: sign-in is off.</strong> Anyone on your network can use FileX. Set <code>FILEX_API_TOKENS</code> to turn it on.</span></div>
+    <main class="main" id="catalog" tabindex="-1">
+      <h1 class="sr-only">Tools</h1>
+      <form role="search" class="search" onsubmit="return false">
+        <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
+        <input id="q" type="search" aria-label="Search tools" aria-describedby="q-hint" placeholder="compress, word to pdf, docx…" autocomplete="off">
+        <span class="hint" id="q-hint"><span class="sr-only">Shortcut: </span><kbd>/</kbd></span>
+      </form>
+      <p class="lede">17 tools on this server. Files stay on your network and expire after 24 hours. <span id="q-count" aria-live="polite"></span></p>
+      <div class="chips" role="group" aria-label="Filter by category">
+        <button type="button" class="chip" aria-pressed="true" data-cat="all">All</button>
+        <button type="button" class="chip cat-organize" aria-pressed="false" data-cat="organize"><span class="sw" aria-hidden="true"></span>Organize</button>
+        <button type="button" class="chip cat-optimize" aria-pressed="false" data-cat="optimize"><span class="sw" aria-hidden="true"></span>Optimize</button>
+        <button type="button" class="chip cat-convert" aria-pressed="false" data-cat="convert"><span class="sw" aria-hidden="true"></span>Convert</button>
+        <button type="button" class="chip cat-ocr" aria-pressed="false" data-cat="ocr"><span class="sw" aria-hidden="true"></span>OCR &amp; scans</button>
+        <button type="button" class="chip cat-edit" aria-pressed="false" data-cat="edit"><span class="sw" aria-hidden="true"></span>Edit</button>
+        <button type="button" class="chip cat-security" aria-pressed="false" data-cat="security"><span class="sw" aria-hidden="true"></span>Security</button>
+        <button type="button" class="chip cat-ebook" aria-pressed="false" data-cat="ebook"><span class="sw" aria-hidden="true"></span>Ebooks</button>
+      </div>
+
+      <div class="bands">
+        <section class="band field-surface folded cat-organize" data-cat="organize" aria-labelledby="g-org">
+          <div><h2 id="g-org">Organize</h2><p class="count">4 tools</p></div>
+          <ul class="tiles">
+            <li><a class="tile" href="#tool" data-k="join combine"><svg class="ico" aria-hidden="true"><use href="#i-merge"/></svg><span class="body"><span class="t">Merge PDFs</span><span class="s">Combine files into one, in the order you choose.</span></span></a></li>
+            <li><a class="tile" href="#tool" data-k="separate extract"><svg class="ico" aria-hidden="true"><use href="#i-split"/></svg><span class="body"><span class="t">Split PDF</span><span class="s">By page ranges, every N pages, or by bookmarks.</span></span></a></li>
+            <li><a class="tile" href="#tool" data-k="reorder delete pages"><svg class="ico" aria-hidden="true"><use href="#i-grid"/></svg><span class="body"><span class="t">Organize pages</span><span class="s">Reorder, delete, duplicate and rotate pages visually.</span></span></a></li>
+            <li><a class="tile" href="#tool" data-k="turn"><svg class="ico" aria-hidden="true"><use href="#i-rotate"/></svg><span class="body"><span class="t">Rotate pages</span><span class="s">Turn all or selected pages.</span></span></a></li>
+          </ul>
+        </section>
+        <section class="band field-surface folded cat-optimize" data-cat="optimize" aria-labelledby="g-opt">
+          <div><h2 id="g-opt">Optimize</h2><p class="count">3 tools</p></div>
+          <ul class="tiles">
+            <li><a class="tile" href="#tool" data-k="shrink smaller reduce size"><svg class="ico" aria-hidden="true"><use href="#i-compress"/></svg><span class="body"><span class="t">Compress PDF</span><span class="s">Shrink to a preset or a target size, with a before/after check.</span></span></a></li>
+            <li><a class="tile" href="#tool" data-k="fix broken damaged"><svg class="ico" aria-hidden="true"><use href="#i-wrench"/></svg><span class="body"><span class="t">Repair PDF</span><span class="s">Rebuild files that will not open.</span></span></a></li>
+            <li><a class="tile" href="#tool" data-k="archive pdfa"><svg class="ico" aria-hidden="true"><use href="#i-file"/></svg><span class="body"><span class="t">PDF to PDF/A</span><span class="s">Archival PDF/A-1b, 2b or 3b.</span></span></a></li>
+          </ul>
+        </section>
+        <section class="band field-surface folded cat-convert" data-cat="convert" aria-labelledby="g-conv">
+          <div><h2 id="g-conv">Convert</h2><p class="count">3 tools</p></div>
+          <div>
+            <ul class="tiles">
+              <li><a class="tile" href="#tool" data-k="format"><svg class="ico" aria-hidden="true"><use href="#i-convert"/></svg><span class="body"><span class="t">Convert anything</span><span class="s">Pick a target format; FileX finds the route.</span></span></a></li>
+              <li><a class="tile" href="#tool" data-k="word excel powerpoint docx xlsx pptx odt"><svg class="ico" aria-hidden="true"><use href="#i-file"/></svg><span class="body"><span class="t">Office to PDF</span><span class="s">Word, Excel, PowerPoint and OpenDocument.</span><span class="fmts"><span class="fmt">docx</span><span class="fmt">xlsx</span><span class="fmt">pptx</span></span></span></a></li>
+              <li><a class="tile" href="#tool" data-k="jpg png heic photo"><svg class="ico" aria-hidden="true"><use href="#i-image"/></svg><span class="body"><span class="t">Images to PDF</span><span class="s">One PDF per image, or all in one.</span></span></a></li>
+            </ul>
+            <div class="conv"><h3>Popular conversions</h3>
+              <a href="#tool"><span>Word</span><svg class="ico-16" aria-hidden="true"><use href="#i-arrow"/></svg><span class="sr-only">to</span><span>PDF</span></a>
+              <a href="#tool"><span>PDF</span><svg class="ico-16" aria-hidden="true"><use href="#i-arrow"/></svg><span class="sr-only">to</span><span>Word</span></a>
+              <a href="#tool"><span>PDF</span><svg class="ico-16" aria-hidden="true"><use href="#i-arrow"/></svg><span class="sr-only">to</span><span>JPG</span></a>
+              <a href="#tool"><span>HEIC</span><svg class="ico-16" aria-hidden="true"><use href="#i-arrow"/></svg><span class="sr-only">to</span><span>PDF</span></a>
+            </div>
+          </div>
+        </section>
+        <section class="band field-surface folded cat-ocr" data-cat="ocr" aria-labelledby="g-ocr">
+          <div><h2 id="g-ocr">OCR &amp; scans</h2><p class="count">2 tools</p></div>
+          <ul class="tiles">
+            <li><a class="tile" href="#tool" data-k="searchable text recognise"><svg class="ico" aria-hidden="true"><use href="#i-scan"/></svg><span class="body"><span class="t">Make searchable (OCR)</span><span class="s">Add a text layer to scans and images.</span></span></a></li>
+            <li><a class="tile off" href="#tool" aria-describedby="off-1" data-k="deskew clean scan border"><svg class="ico" aria-hidden="true"><use href="#i-sparkle"/></svg><span class="body"><span class="t">Clean up scan</span><span class="s">Deskew, remove borders and blank pages.</span><span class="badge badge-warn" id="off-1"><svg class="ico-14" aria-hidden="true"><use href="#i-lock"/></svg>Enable the <code>ocr</code> profile</span></span></a></li>
+          </ul>
+        </section>
+        <section class="band field-surface folded cat-edit" data-cat="edit" aria-labelledby="g-edit">
+          <div><h2 id="g-edit">Edit</h2><p class="count">2 tools</p></div>
+          <ul class="tiles">
+            <li><a class="tile" href="#tool" data-k="stamp"><svg class="ico" aria-hidden="true"><use href="#i-stamp"/></svg><span class="body"><span class="t">Watermark</span><span class="s">Text or image, tiled or placed.</span></span></a></li>
+            <li><a class="tile" href="#tool" data-k="numbering"><svg class="ico" aria-hidden="true"><use href="#i-hash"/></svg><span class="body"><span class="t">Page numbers</span><span class="s">“Page 1 of 12”, any position.</span></span></a></li>
+          </ul>
+        </section>
+        <section class="band field-surface folded cat-security" data-cat="security" aria-labelledby="g-sec">
+          <div><h2 id="g-sec">Security &amp; privacy</h2><p class="count">3 tools</p></div>
+          <ul class="tiles">
+            <li><a class="tile" href="#tool" data-k="signature certificate"><svg class="ico" aria-hidden="true"><use href="#i-pen"/></svg><span class="body"><span class="t">Sign PDF</span><span class="s">Digital signature with your own certificate.</span></span></a></li>
+            <li><a class="tile" href="#tool" data-k="encrypt lock aes"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg><span class="body"><span class="t">Protect with password</span><span class="s">AES-256 and permissions.</span></span></a></li>
+            <li><a class="tile" href="#tool" data-k="scrub privacy exif"><svg class="ico" aria-hidden="true"><use href="#i-eraser"/></svg><span class="body"><span class="t">Remove metadata</span><span class="s">Strip author, dates, IDs and hidden data.</span></span></a></li>
+          </ul>
+        </section>
+        <section class="band field-surface folded cat-ebook" data-cat="ebook" aria-labelledby="g-ebook">
+          <div><h2 id="g-ebook">Ebooks &amp; comics</h2><p class="count">1 tool shown</p></div>
+          <ul class="tiles">
+            <li><a class="tile" href="#tool" data-k="epub mobi kindle azw3 cbz"><svg class="ico" aria-hidden="true"><use href="#i-text"/></svg><span class="body"><span class="t">Convert ebook</span><span class="s">EPUB, MOBI, AZW3, FB2 and comics.</span><span class="fmts"><span class="fmt">epub</span><span class="fmt">mobi</span><span class="fmt">cbz</span></span></span></a></li>
+          </ul>
+        </section>
+      </div>
+      <div id="no-results" hidden style="margin-top:var(--space-8)">
+        <p class="statement">No tools match “<span id="no-q"></span>”</p>
+        <p class="muted" style="margin-top:var(--space-2)">Try a format (pdf, docx) or a verb (shrink, join).</p>
+        <button type="button" class="btn btn-secondary" style="margin-top:var(--space-4)" id="clear-q">Clear search</button>
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- =================== 02 Tool page =================== -->
+<section class="pv-section" aria-labelledby="l-tool">
+  <p class="pv-label meta" id="l-tool">02 Tool page: drop zone, file list, options form (every schema control)</p>
+  <div class="pv-frame">
+    <main class="main" id="tool">
+      <div class="tool-head field-surface folded cat-optimize">
+        <nav class="crumb" aria-label="Breadcrumb"><a href="#catalog">Tools</a> / Optimize</nav>
+        <div class="tool-title-row"><h1 class="tool-title">Compress PDF</h1><p>PDF only, up to 1 GB per file, many files at once</p></div>
+      </div>
+      <div class="tool-grid">
+        <div>
+          <div class="dropzone" id="dz">
+            <span class="sheet folded" aria-hidden="true"><svg width="26" height="26" aria-hidden="true"><use href="#i-drop"/></svg></span>
+            <div><p class="dz-line">Drop PDFs anywhere on this page</p><p class="muted" style="font-size:var(--text-sm)">or</p></div>
+            <label class="btn btn-secondary btn-strong"><svg class="ico-20" aria-hidden="true"><use href="#i-file"/></svg>Choose files<input type="file" accept=".pdf,application/pdf" multiple></label>
+          </div>
+          <div class="list-head"><h2 class="h-section">Files</h2><span class="meta num">3 files, 34.2 MB</span></div>
+          <ol class="files" aria-label="Files">
+            <li><svg class="grip" aria-hidden="true"><use href="#i-grip"/></svg><span class="fname">Annual report 2026 – final version with appendices.pdf</span><span class="fsize num">8.4 MB</span>
+              <span class="row-btns"><button type="button" class="icon-btn" aria-label="Move Annual report up" disabled><svg class="ico-18" aria-hidden="true"><use href="#i-up"/></svg></button><button type="button" class="icon-btn" aria-label="Move Annual report down"><svg class="ico-18" aria-hidden="true"><use href="#i-down"/></svg></button><button type="button" class="icon-btn" aria-label="Remove Annual report"><svg class="ico-18" aria-hidden="true"><use href="#i-x"/></svg></button></span></li>
+            <li><svg class="grip" aria-hidden="true"><use href="#i-grip"/></svg><span class="fname">scan-0042.pdf</span><span class="fsize num">21.7 MB</span>
+              <span class="row-btns"><button type="button" class="icon-btn" aria-label="Move scan-0042 up"><svg class="ico-18" aria-hidden="true"><use href="#i-up"/></svg></button><button type="button" class="icon-btn" aria-label="Move scan-0042 down"><svg class="ico-18" aria-hidden="true"><use href="#i-down"/></svg></button><button type="button" class="icon-btn" aria-label="Remove scan-0042"><svg class="ico-18" aria-hidden="true"><use href="#i-x"/></svg></button></span></li>
+            <li><svg class="grip" aria-hidden="true"><use href="#i-grip"/></svg><span class="fname">holiday-letters.pdf</span><span class="fsize num">Uploading 42%</span>
+              <span class="row-btns"><button type="button" class="icon-btn" aria-label="Move holiday-letters up"><svg class="ico-18" aria-hidden="true"><use href="#i-up"/></svg></button><button type="button" class="icon-btn" aria-label="Move holiday-letters down" disabled><svg class="ico-18" aria-hidden="true"><use href="#i-down"/></svg></button><button type="button" class="icon-btn" aria-label="Cancel upload of holiday-letters"><svg class="ico-18" aria-hidden="true"><use href="#i-x"/></svg></button></span>
+              <span class="row-bar" role="progressbar" aria-label="Uploading holiday-letters" aria-valuemin="0" aria-valuemax="100" aria-valuenow="42" style="--p:0.42"><span></span></span></li>
+          </ol>
+        </div>
+
+        <form class="options" aria-labelledby="opt-h" onsubmit="return false">
+          <h2 class="h-section" id="opt-h">Options</h2>
+          <fieldset class="field"><legend>Mode</legend>
+            <div class="opts">
+              <label class="opt"><input type="radio" name="mode" value="preset" checked><span class="t">Preset<svg class="ico-16" aria-hidden="true"><use href="#i-check"/></svg></span><span class="d">Pick a strength</span></label>
+              <label class="opt"><input type="radio" name="mode" value="target"><span class="t">Target size<svg class="ico-16" aria-hidden="true"><use href="#i-check"/></svg></span><span class="d">“Under 2 MB”</span></label>
+            </div>
+          </fieldset>
+          <fieldset class="field"><legend>Strength</legend>
+            <div class="opts">
+              <label class="opt"><input type="radio" name="str" value="low"><span class="t">Low<svg class="ico-16" aria-hidden="true"><use href="#i-check"/></svg></span><span class="d">Best quality</span></label>
+              <label class="opt"><input type="radio" name="str" value="medium" checked><span class="t">Medium<svg class="ico-16" aria-hidden="true"><use href="#i-check"/></svg></span><span class="d">Recommended</span></label>
+              <label class="opt"><input type="radio" name="str" value="high"><span class="t">High<svg class="ico-16" aria-hidden="true"><use href="#i-check"/></svg></span><span class="d">Smaller, softer images</span></label>
+              <label class="opt"><input type="radio" name="str" value="extreme"><span class="t">Extreme<svg class="ico-16" aria-hidden="true"><use href="#i-check"/></svg></span><span class="d">Smallest file</span></label>
+            </div>
+          </fieldset>
+          <div class="field"><label class="label" for="o-target">Target size</label>
+            <div class="affix"><input class="input mono" id="o-target" type="number" min="0.1" step="0.1" value="2" aria-describedby="o-target-h"><span class="suffix" aria-hidden="true">MB</span></div>
+            <span class="help" id="o-target-h">In megabytes. We get as close as we can and tell you if we could not reach it.</span></div>
+          <div class="field"><label class="label" for="o-dpi">Image resolution cap</label>
+            <select class="input" id="o-dpi"><option>150 DPI (screen)</option><option>300 DPI (print)</option><option>No cap</option></select></div>
+          <div class="field"><label class="switch"><span><span style="display:block;font-weight:var(--weight-semibold)">Grayscale</span><span class="help" id="o-gray-h">Removes colour, often halves the size.</span></span><input type="checkbox" role="switch" aria-describedby="o-gray-h"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div>
+          <div class="field"><label class="label" for="o-pages">Pages</label>
+            <input class="input" id="o-pages" value="1-3, 9-" aria-invalid="true" aria-describedby="o-pages-e o-pages-h">
+            <span class="err" id="o-pages-e"><svg class="ico-16" aria-hidden="true"><use href="#i-alert"/></svg>Page 9 does not exist; this file has 8 pages.</span>
+            <span class="help" id="o-pages-h">For example 1-3, 5, 8-. Leave empty for all pages.</span></div>
+          <div class="field"><label class="label" for="o-pw">Open password</label>
+            <div class="affix"><input class="input" id="o-pw" type="password" autocomplete="off" aria-describedby="o-pw-h"><button type="button" class="affix-btn" aria-label="Show password" aria-pressed="false" data-toggle-pw="o-pw"><svg class="ico-18" aria-hidden="true"><use href="#i-eye"/></svg></button></div>
+            <span class="help" id="o-pw-h">Only needed if the PDF is locked. Never stored.</span></div>
+          <fieldset class="field"><legend>Position <span class="muted" style="font-weight:var(--weight-regular)">(position picker widget, watermark and page numbers)</span></legend>
+            <div class="pos-grid" role="radiogroup" aria-label="Position">
+              <label><input type="radio" name="pos" aria-label="Top left"></label><label><input type="radio" name="pos" aria-label="Top centre"></label><label><input type="radio" name="pos" aria-label="Top right"></label>
+              <label><input type="radio" name="pos" aria-label="Middle left"></label><label><input type="radio" name="pos" aria-label="Centre"></label><label><input type="radio" name="pos" aria-label="Middle right"></label>
+              <label><input type="radio" name="pos" aria-label="Bottom left"></label><label><input type="radio" name="pos" aria-label="Bottom centre" checked></label><label><input type="radio" name="pos" aria-label="Bottom right"></label>
+            </div></fieldset>
+          <div class="field"><span class="label" id="o-cert-l">Certificate <span class="muted" style="font-weight:var(--weight-regular)">(auxiliary file field)</span></span>
+            <div class="aux"><label class="btn btn-secondary btn-strong"><svg class="ico-18" aria-hidden="true"><use href="#i-file"/></svg>Choose file<input type="file" accept=".p12,.pfx" aria-labelledby="o-cert-l" aria-describedby="o-cert-h"></label><span class="meta">No file chosen</span></div>
+            <span class="help" id="o-cert-h">A .p12 or .pfx file. Used for this job only, then deleted.</span></div>
+          <div class="submit-bar">
+            <span class="meta num">3 files, 34.2 MB</span>
+            <button type="submit" class="btn btn-primary btn-block">Compress 3 files<svg class="ico-20" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- Full-page drop overlay (opened by a real drag or the button at the top) -->
+<div class="overlay cat-optimize" id="overlay" data-open="false" aria-hidden="true">
+  <div class="drop-card field-surface folded">
+    <span class="sheet" aria-hidden="true"><svg width="26" height="26" aria-hidden="true"><use href="#i-drop"/></svg></span>
+    <p class="drop-big">Drop to add</p>
+    <p style="margin-top:var(--space-3)">PDF files, up to 1 GB each</p>
+    <p class="drop-esc"><kbd>Esc</kbd>to cancel</p>
+  </div>
+</div>
+<p class="sr-only" aria-live="polite" id="drop-live"></p>
+
+<!-- =================== 03 Progress + My jobs =================== -->
+<section class="pv-section" aria-labelledby="l-progress">
+  <p class="pv-label meta" id="l-progress">03 My jobs: running, queued, and the job list</p>
+  <div class="pv-frame">
+    <main class="main main-jobs" id="progress">
+      <h1 class="page-title">My jobs</h1>
+      <section class="rule-open" style="margin-top:var(--space-7)" aria-labelledby="j1">
+        <div class="job-head"><h2 class="job-title" id="j1">Converting report.docx</h2><span class="badge badge-ink">Running</span></div>
+        <div class="pct-row"><span class="pct" aria-hidden="true">46%</span><span class="muted">Rendering page 12 of 26</span></div>
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="46" aria-label="Converting report.docx" style="--p:0.46"><span></span></div>
+        <ol class="steps" aria-label="Steps">
+          <li><span class="step-done" aria-hidden="true"><svg class="ico-14" aria-hidden="true"><use href="#i-check"/></svg></span><span><span class="st"><span class="sr-only">Done: </span>Uploaded</span><span class="sd">Done, 4.1 MB</span></span></li>
+          <li><span class="spinner" aria-hidden="true"></span><span><span class="st"><span class="sr-only">Running: </span>DOCX → PDF via LibreOffice</span><span class="sd">Running</span></span></li>
+          <li class="wait"><span class="step-wait" aria-hidden="true"></span><span><span class="st"><span class="sr-only">Waiting: </span>Compress</span><span class="sd">Waiting</span></span></li>
+        </ol>
+        <div style="margin-top:var(--space-5)"><button type="button" class="btn btn-secondary">Cancel</button></div>
+      </section>
+      <section class="rule-open" style="margin-top:var(--space-12)" aria-labelledby="j2">
+        <div class="job-head"><h2 class="job-title" id="j2">Compress scan-0042.pdf</h2><span class="badge badge-neutral"><svg class="ico-14" aria-hidden="true"><use href="#i-clock"/></svg>Queued</span></div>
+        <p class="statement" style="margin-top:var(--space-4)">Queued, <span class="num">2</span> jobs ahead</p>
+        <div class="bar indet" role="progressbar" aria-label="Queued"><span></span></div>
+      </section>
+      <section style="margin-top:var(--space-12)" aria-labelledby="j3">
+        <h2 class="h-section" id="j3">Earlier</h2>
+        <ul class="jobs">
+          <li><span><a href="#result">Compress PDF</a> <span class="muted">Annual report 2026.pdf</span></span><span class="badge badge-ok"><svg class="ico-14" aria-hidden="true"><use href="#i-check"/></svg>Done</span><span class="meta when">Today 09:41</span><span class="meta when">Expires in 23 h</span></li>
+          <li><span><a href="#states">Compress PDF</a> <span class="muted">scan-0041.pdf</span></span><span class="badge badge-danger"><svg class="ico-14" aria-hidden="true"><use href="#i-x"/></svg>Failed</span><span class="meta when">Today 09:12</span><span class="meta when">Expires in 22 h</span></li>
+          <li><span><a href="#result">Merge PDFs</a> <span class="muted">4 files</span></span><span class="badge badge-ok"><svg class="ico-14" aria-hidden="true"><use href="#i-check"/></svg>Done</span><span class="meta when">Yesterday 17:03</span><span class="meta when">Expires in 6 h</span></li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</section>
+
+<!-- =================== 04 Result =================== -->
+<section class="pv-section" aria-labelledby="l-result">
+  <p class="pv-label meta" id="l-result">04 Compression result (side by side from 40rem, slider below)</p>
+  <div class="pv-frame">
+    <main class="main main-result" id="result">
+      <nav class="crumb muted" aria-label="Breadcrumb"><a href="#catalog">Tools</a> / <a href="#tool">Compress PDF</a></nav>
+      <section class="rule-open" style="margin-top:var(--space-4)" tabindex="-1" aria-labelledby="r-h">
+        <div class="res-head"><span class="res-ok" aria-hidden="true"><svg class="ico-20" aria-hidden="true"><use href="#i-check"/></svg></span><h2 class="job-title" id="r-h">Annual report 2026.pdf is ready</h2><span class="badge badge-ok"><svg class="ico-14" aria-hidden="true"><use href="#i-check"/></svg>Target reached</span></div>
+        <div class="res-grid">
+          <p class="outcome" aria-hidden="true">−62%</p>
+          <div>
+            <p class="figure" aria-hidden="true">8.4 MB → 3.2 MB</p>
+            <p class="muted" style="margin-top:var(--space-1-5)">5.2 MB saved, under the 4 MB target</p>
+            <div class="sizes" role="img" aria-label="Original 8.4 MB, compressed 3.2 MB, 62 percent smaller, target under 4 MB reached.">
+              <div class="size-row" aria-hidden="true"><span>Original</span><span class="size-bar"></span><span class="v">8.4 MB</span></div>
+              <div class="size-row" aria-hidden="true"><span>Now</span><span><span class="size-bar now" style="width:38%"></span></span><span class="v">3.2 MB</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="ba" role="group" aria-label="Page 1, before and after">
+          <div class="ba-side">
+            <figure><img class="page-img" src="design/preview/page-before.svg" alt="Page 1 before compression"><figcaption><span>Before</span><span class="muted">page 1, 100%</span></figcaption></figure>
+            <figure><img class="page-img" src="design/preview/page-after.svg" alt="Page 1 after compression"><figcaption><span>After</span><span class="muted">page 1, 100%</span></figcaption></figure>
+          </div>
+          <div class="ba-slide" id="cmp" style="--pos:50%">
+            <div class="cmp"><img class="page-img" src="design/preview/page-before.svg" alt="Page 1 before compression, left of the divider"><img class="after" src="design/preview/page-after.svg" alt="Page 1 after compression, right of the divider"><span class="handle" aria-hidden="true"></span></div>
+            <div class="cap" aria-hidden="true"><span>Before</span><span>After</span></div>
+            <input type="range" min="0" max="100" value="50" aria-label="Compare position, before on the left, after on the right" id="cmp-range">
+          </div>
+        </div>
+        <div class="actions rule-open">
+          <a class="btn btn-primary" href="#" download><svg class="ico-20" aria-hidden="true"><use href="#i-download"/></svg>Download <span class="num">(3.2 MB)</span></a>
+          <button type="button" class="btn btn-secondary"><svg class="ico-18" aria-hidden="true"><use href="#i-trash"/></svg>Delete now</button>
+          <span class="meta expires"><svg class="ico-16" aria-hidden="true"><use href="#i-clock"/></svg>Expires in 23 h</span>
+        </div>
+        <div class="variant">
+          <p class="eyebrow">Variant: target not reached</p>
+          <div class="res-head" style="margin-top:var(--space-3)"><h3 class="job-title">scan-0042.pdf is ready</h3><span class="badge badge-warn"><svg class="ico-14" aria-hidden="true"><use href="#i-alert"/></svg>Best we could do</span></div>
+          <p class="muted" style="margin-top:var(--space-1-5)">21.7 MB → 4.6 MB. The 4 MB target was not reachable without making text unreadable.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+</section>
+
+<!-- =================== 05 Sign-in =================== -->
+<section class="pv-section" aria-labelledby="l-signin">
+  <p class="pv-label meta" id="l-signin">05 Sign-in, sign-in server unreachable</p>
+  <div class="pv-frame">
+    <div class="signin">
+      <div class="si-panel folded">
+        <div class="si-brand"><span class="mark folded"><svg class="ico-14" aria-hidden="true"><use href="#i-logo"/></svg></span>FileX</div>
+        <div><p class="wordmark">Your paper,<br>your server.</p><p class="si-sub">Every tool runs on this machine. Files never leave your network.</p></div>
+      </div>
+      <div class="si-form-wrap">
+        <form class="si-form" aria-labelledby="si-h" onsubmit="return false">
+          <h2 class="page-title" id="si-h">Sign in</h2>
+          <p class="muted" style="margin-top:var(--space-2-5)">Use the account your admin invited.</p>
+          <div class="alert" role="alert" style="margin-top:var(--space-5)"><svg class="ico-20" aria-hidden="true"><use href="#i-alert"/></svg><span><strong>Sign-in server unreachable</strong>FileX could not reach the sign-in server. Check that it is running, then try again.</span></div>
+          <div style="margin-top:var(--space-6)"><label class="label" for="si-email">Email</label><input class="input" id="si-email" type="email" autocomplete="username" value="ana@home.lan"></div>
+          <div style="margin-top:var(--space-5)"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:var(--space-3);margin-bottom:var(--space-2)"><label for="si-pass" style="font-weight:var(--weight-semibold)">Password</label><a href="#" style="font-size:var(--text-ui);font-weight:var(--weight-semibold)">Forgot password?</a></div>
+            <div class="affix"><input class="input" id="si-pass" type="password" autocomplete="current-password"><button type="button" class="affix-btn" aria-label="Show password" aria-pressed="false" data-toggle-pw="si-pass"><svg class="ico-18" aria-hidden="true"><use href="#i-eye"/></svg></button></div></div>
+          <button type="submit" class="btn btn-primary btn-block" style="margin-top:var(--space-7)">Sign in</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== 06 States =================== -->
+<section class="pv-section" aria-labelledby="l-states">
+  <p class="pv-label meta" id="l-states">06 Empty and error states</p>
+  <div class="pv-frame">
+    <main class="main main-jobs" id="states" style="display:grid;gap:var(--space-14)">
+      <section aria-labelledby="s1"><p class="eyebrow" id="s1" style="margin-bottom:var(--space-3)">Wrong file type refused</p>
+        <div class="dz-compact"><span class="sheet folded" aria-hidden="true"><svg class="ico-18" aria-hidden="true"><use href="#i-drop"/></svg></span><span class="grow">Drop PDFs anywhere on this page</span><label class="btn btn-secondary btn-strong" style="min-height:var(--control-md)"><svg class="ico-18" aria-hidden="true"><use href="#i-file"/></svg>Choose files<input type="file" accept=".pdf" multiple></label></div>
+        <div class="alert" role="alert" style="margin-top:var(--space-3)"><svg class="ico-20" aria-hidden="true"><use href="#i-alert"/></svg><span><strong>holiday.docx was not added</strong>Compress PDF accepts PDF files. Try <a href="#tool">Office to PDF</a> first.</span></div>
+      </section>
+      <section aria-labelledby="s2"><p class="eyebrow" id="s2" style="margin-bottom:var(--space-3)">Failed job</p>
+        <div class="rule-open">
+          <div class="job-head"><h2 class="job-title">Compress scan-0042.pdf</h2><span class="badge badge-danger"><svg class="ico-14" aria-hidden="true"><use href="#i-x"/></svg>Failed</span></div>
+          <div class="alert" role="alert" style="margin-top:var(--space-4)"><svg class="ico-20" aria-hidden="true"><use href="#i-alert"/></svg><span><strong>scan-0042.pdf could not be compressed</strong>The file is damaged (INVALID_PDF). Try <a href="#tool">Repair PDF</a>, then compress again.</span></div>
+          <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-top:var(--space-4)"><a class="btn btn-primary" href="#tool"><svg class="ico-20" aria-hidden="true"><use href="#i-wrench"/></svg>Open Repair PDF</a><button type="button" class="btn btn-secondary">Dismiss</button></div>
+        </div>
+      </section>
+    </main>
+  </div>
+</section>
+
+<!-- =================== Tokens =================== -->
+<section class="pv-section" aria-labelledby="tok-h" id="tokens" style="padding-bottom:var(--space-16)">
+  <div class="main" style="padding-top:0">
+    <h2 class="page-title" id="tok-h">Tokens</h2>
+    <p class="muted" style="margin-top:var(--space-2)">Read live from the CSS custom properties for the theme on screen. Switch the theme in the header to see the other set.</p>
+    <h3 class="h-section" style="margin-top:var(--space-8)">Colour</h3>
+    <div class="swatches" id="sw" style="margin-top:var(--space-3)"></div>
+    <h3 class="h-section" style="margin-top:var(--space-8)">Contrast, computed live</h3>
+    <div style="overflow-x:auto;margin-top:var(--space-3)"><table class="ctable" id="ct"><thead><tr><th scope="col">Foreground</th><th scope="col">Background</th><th scope="col">Need</th><th scope="col">Ratio</th><th scope="col">Result</th></tr></thead><tbody></tbody></table></div>
+    <h3 class="h-section" style="margin-top:var(--space-8)">Type</h3>
+    <div class="specimen" style="margin-top:var(--space-3)">
+      <div><span class="meta">--display-outcome, 900, 125% width</span><span class="outcome">−62%</span></div>
+      <div><span class="meta">--display-percent, 800, 125%</span><span class="pct">46%</span></div>
+      <div><span class="meta">--display-tool, 800, 125%</span><span class="tool-title">Compress PDF</span></div>
+      <div><span class="meta">--display-band, 800, 125%</span><span style="font-weight:800;font-stretch:125%;font-size:var(--display-band);line-height:1.05;letter-spacing:var(--tracking-band)">Security &amp; privacy</span></div>
+      <div><span class="meta">--text-xl, 800, 125% (section heading)</span><span class="h-section">Options</span></div>
+      <div><span class="meta">--text-md 16/24, 400, 100% (body)</span><span>Files stay on your network and expire after 24 hours.</span></div>
+      <div><span class="meta">--font-mono 13/18 (meta, sizes, codes)</span><span class="meta" style="color:var(--color-text)">2 files, 30.1 MB · INVALID_PDF</span></div>
+    </div>
+  </div>
+</section>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var css = getComputedStyle(root);
+
+  /* Theme switch: system / light / dark, remembered per browser. */
+  var saved = root.dataset.theme || "system";
+  document.querySelectorAll('input[name="theme"]').forEach(function (r) {
+    r.checked = r.value === saved;
+    r.addEventListener("change", function () {
+      if (r.value === "system") delete root.dataset.theme; else root.dataset.theme = r.value;
+      try { localStorage.setItem("filex-theme", r.value); } catch (e) {}
+      renderTokens();
+    });
+  });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderTokens);
+
+  /* "/" focuses search (not while typing in a field). */
+  var q = document.getElementById("q");
+  document.addEventListener("keydown", function (e) {
+    var t = e.target.tagName;
+    if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey && t !== "INPUT" && t !== "TEXTAREA" && t !== "SELECT") { e.preventDefault(); q.focus(); }
+    if (e.key === "Escape" && overlay.dataset.open === "true") closeOverlay();
+  });
+
+  /* Search + category filter. */
+  var activeCat = "all";
+  function filter() {
+    var term = q.value.trim().toLowerCase(), shown = 0;
+    document.querySelectorAll(".band").forEach(function (g) {
+      var catOk = activeCat === "all" || g.dataset.cat === activeCat, any = false;
+      g.querySelectorAll(".tiles li").forEach(function (li) {
+        var a = li.querySelector("a"), text = (a.textContent + " " + (a.dataset.k || "")).toLowerCase();
+        var ok = catOk && (!term || term.split(/\s+/).every(function (w) { return text.indexOf(w) !== -1; }));
+        li.hidden = !ok; if (ok) { any = true; shown++; }
+      });
+      g.hidden = !any;
+    });
+    document.getElementById("no-results").hidden = shown > 0;
+    document.getElementById("no-q").textContent = q.value;
+    document.getElementById("q-count").textContent = term ? shown + (shown === 1 ? " tool found." : " tools found.") : "";
+  }
+  q.addEventListener("input", filter);
+  document.getElementById("clear-q").addEventListener("click", function () { q.value = ""; filter(); q.focus(); });
+  document.querySelectorAll(".chip").forEach(function (c) {
+    c.addEventListener("click", function () {
+      document.querySelectorAll(".chip").forEach(function (o) { o.setAttribute("aria-pressed", String(o === c)); });
+      activeCat = c.dataset.cat; filter();
+    });
+  });
+
+  /* Drag state + full-page overlay. */
+  var dz = document.getElementById("dz"), overlay = document.getElementById("overlay"), live = document.getElementById("drop-live");
+  function openOverlay() { overlay.dataset.open = "true"; dz.dataset.active = "true"; live.textContent = "Drop to add PDF files. Press Escape to cancel."; }
+  function closeOverlay() { overlay.dataset.open = "false"; dz.dataset.active = "false"; live.textContent = ""; }
+  document.getElementById("sim-drag").addEventListener("click", openOverlay);
+  overlay.addEventListener("click", closeOverlay);
+  var depth = 0;
+  window.addEventListener("dragenter", function (e) { e.preventDefault(); if (depth++ === 0) openOverlay(); });
+  window.addEventListener("dragleave", function () { if (--depth <= 0) { depth = 0; closeOverlay(); } });
+  window.addEventListener("dragover", function (e) { e.preventDefault(); });
+  window.addEventListener("drop", function (e) { e.preventDefault(); depth = 0; closeOverlay(); });
+
+  /* Before/after slider. */
+  var cmp = document.getElementById("cmp");
+  document.getElementById("cmp-range").addEventListener("input", function (e) { cmp.style.setProperty("--pos", e.target.value + "%"); });
+
+  /* Show/hide password. */
+  document.querySelectorAll("[data-toggle-pw]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var i = document.getElementById(b.dataset.togglePw), on = b.getAttribute("aria-pressed") !== "true";
+      i.type = on ? "text" : "password"; b.setAttribute("aria-pressed", String(on));
+      b.setAttribute("aria-label", on ? "Hide password" : "Show password");
+    });
+  });
+
+  /* Tokens: swatches + live contrast for the theme on screen. */
+  var SW = ["bg", "surface", "surface-2", "surface-3", "border", "border-strong", "text", "text-muted", "accent", "accent-hover",
+    "on-accent-muted", "success-fg", "success-bg", "warning-fg", "warning-bg", "danger-fg", "danger-bg"];
+  var CATS = ["organize", "optimize", "convert", "ocr", "edit", "security", "ebook", "compare", "ai"];
+  function v(name) { return css.getPropertyValue(name).trim(); }
+  function rgb(h) { h = h.replace("#", ""); return [0, 2, 4].map(function (i) { return parseInt(h.substr(i, 2), 16) / 255; }); }
+  function lum(h) { var c = rgb(h).map(function (x) { return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; }
+  function ratio(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+  function tok(k) { return k.indexOf("cat-") === 0 ? "--" + k : "--color-" + k; }
+  var PAIRS = [["text", "bg", 4.5], ["text-muted", "bg", 4.5], ["text", "surface", 4.5], ["text-muted", "surface", 4.5], ["text-muted", "surface-2", 4.5],
+    ["text-muted", "surface-3", 4.5], ["on-accent", "accent", 4.5], ["on-accent-muted", "accent", 4.5], ["success-fg", "success-bg", 4.5],
+    ["warning-fg", "warning-bg", 4.5], ["danger-fg", "danger-bg", 4.5], ["border-strong", "surface", 3], ["border-strong", "surface-3", 3]]
+    .concat(CATS.map(function (c) { return ["on-cat", "cat-" + c, 4.5]; }));
+  function renderTokens() {
+    css = getComputedStyle(root);
+    var sw = document.getElementById("sw"); sw.textContent = "";
+    SW.map(tok).concat(CATS.map(function (c) { return "--cat-" + c; })).forEach(function (n) {
+      var d = document.createElement("div"); d.className = "swatch";
+      var c = document.createElement("div"); c.className = "chipc"; c.style.background = "var(" + n + ")";
+      var l = document.createElement("div"); l.className = "lab";
+      var b = document.createElement("b"); b.textContent = n.replace("--color-", "").replace("--", "");
+      var s = document.createElement("span"); s.textContent = v(n);
+      l.append(b, s); d.append(c, l); sw.append(d);
+    });
+    var tb = document.querySelector("#ct tbody"); tb.textContent = "";
+    PAIRS.forEach(function (p) {
+      var r = ratio(v(tok(p[0])), v(tok(p[1]))), tr = document.createElement("tr");
+      [p[0], p[1], p[2] + ":1", r.toFixed(2), r >= p[2] ? "Pass" : "Fail"].forEach(function (t, i) {
+        var td = document.createElement("td"); td.textContent = t; if (i === 3) td.className = "r"; tr.append(td);
+      });
+      tb.append(tr);
+    });
+  }
+  renderTokens();
+})();
+</script>
+</body>
+</html>

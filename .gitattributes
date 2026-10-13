@@ -1,0 +1,20 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.tif binary
+*.tiff binary
+*.heic binary
+*.webp binary
+*.pdf binary
+*.docx binary
+*.xlsx binary
+*.xls binary
+*.pptx binary
+*.odt binary
+*.epub binary
+*.mobi binary
+*.azw3 binary
+*.cbz binary
+*.djvu binary
+*.woff2 binary

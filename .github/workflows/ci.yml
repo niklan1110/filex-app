@@ -1,0 +1,103 @@
+# Fast checks (plan task 11), on demand. Worker images and the weekly rebuild: images.yml.
+name: CI
+
+on:
+  # Owner decision (2026-10-11): run only on demand to save GitHub Actions minutes.
+  # Start from the Actions tab or: gh workflow run ci.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  python:
+    name: Python (lint, contract, tests)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      # Throwaway Redis (the same Valkey image as compose.yaml) for the real-Redis runner tests;
+      # the fixture FLUSHes db 15. valkey/valkey:8.1-alpine
+      redis:
+        image: valkey/valkey:8.1-alpine@sha256:081c2f5cb575efc901aa80ff9cdbd1ec6a301682fd35e1ebb4b0990a4a4a8507
+        ports: ["127.0.0.1:6379:6379"]
+        options: >-
+          --health-cmd "valkey-cli ping" --health-interval 2s --health-timeout 2s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      # Every extra, so the pure parts of every tool test run here; the engine parts skip and
+      # run inside the worker images (images.yml).
+      - name: Install
+        run: pip install -e ".[api,core,ocr,ebook,dev]"
+      - name: Ruff
+        run: |
+          ruff check --output-format=github .
+          ruff format --check .
+      - name: Contract drift (openapi.json, tools.md)
+        run: |
+          python scripts/gen_openapi.py --check
+          python scripts/gen_tool_docs.py --check
+      # ADR-0008: Docker log rotation on every service; compose needs the secret files to parse.
+      - name: Compose config (log rotation on every service)
+        run: |
+          python scripts/make_secrets.py
+          docker compose --profile all config --format json | python -c '
+          import json, sys
+          services = json.load(sys.stdin)["services"]
+          bad = [n for n, s in services.items()
+                 if s.get("logging", {}).get("options", {}).get("max-size") is None]
+          assert not bad, f"no log rotation: {bad}"
+          print(f"log rotation on {len(services)} services")'
+      # The hashed lockfiles the images install from (task 66). Any known vulnerability fails.
+      - name: pip-audit (requirements/*.txt)
+        run: |
+          pip install pip-audit==2.10.1
+          for f in requirements/*.txt; do
+            echo "== $f"
+            pip-audit --progress-spinner off --disable-pip --require-hashes -r "$f"
+          done
+      - name: Pytest
+        env:
+          FILEX_TEST_REDIS_URL: redis://127.0.0.1:6379/15
+          FILEX_TEST_REDIS_ACL: docker
+        run: python -m pytest -q -rs -p no:cacheprovider
+
+  web:
+    name: Web (lint, typecheck, test, build)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      # Only what ships in the UI bundle; dev tools (Vite, ESLint, Playwright) never reach users.
+      - name: npm audit (runtime packages)
+        run: npm audit --omit=dev
+      - run: npm run lint
+      - name: Typecheck and build
+        run: npm run build
+      - run: npm test
+      - name: API types drift (src/api/schema.d.ts)
+        run: |
+          npm run gen:api
+          git diff --exit-code -- src/api/schema.d.ts

@@ -1,0 +1,12 @@
+# Bench-only override for scripts/bench/weak_hardware.py (plan task 43). Puts every FileX
+# container under one parent cgroup, /filex-bench, whose memory.max / cpu.max the bench sets to
+# mimic a small machine (the whole stack shares e.g. 2 GB and 2 CPUs, as on a 2 GB home server).
+# Needs the cgroupfs driver (Docker Desktop, plain dockerd). Never use it for the live stack.
+#   docker compose -p filex-bench -f compose.yaml -f scripts/bench/weak-hw.compose.yaml up -d
+services:
+  api: { cgroup_parent: /filex-bench }
+  redis: { cgroup_parent: /filex-bench }
+  worker-core: { cgroup_parent: /filex-bench }
+  worker-office: { cgroup_parent: /filex-bench }
+  worker-ocr: { cgroup_parent: /filex-bench }
+  worker-ebook: { cgroup_parent: /filex-bench }

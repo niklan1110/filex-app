@@ -1,0 +1,11 @@
+*
+!pyproject.toml
+!requirements/
+!filex/
+!web/
+!LICENSE
+!THIRD_PARTY_NOTICES.md
+web/node_modules
+web/dist
+**/__pycache__
+Dockerfile
