@@ -30,7 +30,7 @@ WORKDIR /app
 # The web UI (plan task 9), built on the build host's arch: the output is static files.
 # npm audit runs in CI (ci.yml, images.yml), not here: the build must not depend on it.
 # node:24-trixie-slim
-FROM --platform=$BUILDPLATFORM node:24-trixie-slim@sha256:173f125896c3b47ddf056734c7ea789d04595a6a08769a8f78e0df642781fb66 AS web
+FROM --platform=$BUILDPLATFORM node:24-trixie-slim@sha256:7f486cabe892bff8fef04c0f7da8dba84a560be3e4e2740b7a86afc57ebec315 AS web
 WORKDIR /web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci --no-audit --no-fund
