@@ -7,7 +7,7 @@
 # current ones at build time, so the weekly rebuild (images.yml) picks up Debian security fixes.
 
 # python:3.12-slim-trixie
-FROM python:3.12-slim-trixie@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 AS base
+FROM python:3.12-slim-trixie@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
@@ -203,7 +203,7 @@ CMD ["python", "-m", "filex.worker", "ocr"]
 # Debian stable. Calibre's own build bundles a current Qt WebEngine. To bump a version, change
 # the ARG and both digests; a version without a digest here fails the build.
 # python:3.12-slim-trixie
-FROM python:3.12-slim-trixie@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 AS ebook-fetch
+FROM python:3.12-slim-trixie@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 AS ebook-fetch
 ARG TARGETARCH
 ARG CALIBRE_VERSION=9.16.0
 ARG PANDOC_VERSION=3.11
