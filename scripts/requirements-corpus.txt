@@ -2,7 +2,7 @@
 # Optional system tool: Calibre's ebook-convert (for book.mobi / book.azw3).
 reportlab==5.0.1
 pikepdf==10.16.0
-pillow==12.3.0
+pillow==13.0.0
 pillow-heif==1.8.0
 pymupdf==1.28.2
 python-docx==1.2.0
